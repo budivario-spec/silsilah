@@ -119,18 +119,11 @@
         function renderPohon() {
             const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
             const wrapper = document.getElementById('treeWrapper');
-            
             if (daftar.length === 0) {
                 wrapper.innerHTML = "<p class='text-center text-gray-400 mt-10 italic'>Belum ada data keluarga.</p>";
                 return;
             }
-
-            // --- PERBAIKAN DI SINI ---
-            // Cari akar yang benar: Dia tidak punya parentID DAN dia BUKAN berstatus 'pasangan'
-            const akarKeluarga = daftar.filter(a => 
-                (!a.parentID || a.parentID === "") && a.status !== 'pasangan'
-            );
-
+            const akarKeluarga = daftar.filter(a => a.status === 'none' || !a.parentID);
             let htmlUtama = "";
             akarKeluarga.forEach(kepala => htmlUtama += buildNode(kepala, daftar));
             wrapper.innerHTML = htmlUtama;
