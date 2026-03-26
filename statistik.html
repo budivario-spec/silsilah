@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistik Generasi - Mbah Muntari</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .header-curve {
+            background: linear-gradient(135deg, #00e5ff 0%, #00acc1 100%);
+            height: 120px;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            position: relative;
+        }
+        .btn-back {
+            position: absolute; left: 20px; font-size: 24px; color: white;
+        }
+        .chart-bar {
+            transition: width 1s ease-in-out;
+            height: 24px;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-10">
+
+    <div class="header-curve shadow-lg">
+        <button onclick="window.location.href='index.html'" class="btn-back">←</button>
+        <h1 class="text-xl font-bold">Statistik Generasi</h1>
+    </div>
+
+    <div class="p-6 -mt-8">
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+            <h2 class="text-gray-400 text-sm font-semibold uppercase tracking-wider mb-6 text-center">Sebaran Keluarga</h2>
+            
+            <div id="wadahStatistik" class="space-y-8">
+                </div>
+
+            <div class="mt-10 pt-6 border-t border-gray-50">
+                <p class="text-center text-xs text-gray-400 italic">
+                    *Data dihitung berdasarkan tahun kelahiran yang terdaftar.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Ganti dengan URL Google Apps Script Om Budi yang sudah dideploy
+        const URL_API = "https://script.google.com/macros/s/AKfycbzVJ_eQoLJQJ3gzCSCm0xwiebuqsSJwgnSHZ-yIyJuBLXGTJ90xkfMuuqbJyDzocDCpQA/exec"; 
+
+        async function muatStatistikCloud() {
+            const wadah = document.getElementById('wadahStatistik');
+            
+            // 1. Tampilkan Loading saat ambil data
+            wadah.innerHTML = `
+                <div class="text-center p-10">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#00e5ff] mx-auto"></div>
+                    <p class="text-gray-400 mt-4 text-sm font-medium">Mengambil data dari Cloud...</p>
+                </div>`;
+
+            try {
+                const response = await fetch(URL_API);
+                const daftar = await response.json();
+
+                // 2. Simpan cadangan ke LocalStorage (opsional, agar aplikasi tetap cepat di masa depan)
+                localStorage.setItem('daftarKeluarga', JSON.stringify(daftar));
+
+                // 3. Inisialisasi Data Generasi
+                let stats = {
+                    "Alpha (2013-Sekarang)": { count: 0, color: "bg-blue-400", start: 2013, end: 2026 },
+                    "Gen Z (1997-2012)": { count: 0, color: "bg-emerald-400", start: 1997, end: 2012 },
+                    "Milenial (1981-1996)": { count: 0, color: "bg-amber-400", start: 1981, end: 1996 },
+                    "Gen X (1965-1980)": { count: 0, color: "bg-orange-400", start: 1965, end: 1980 },
+                    "Baby Boomers (1946-1964)": { count: 0, color: "bg-rose-400", start: 1946, end: 1964 }
+                };
+
+                // 4. Hitung Data dari Google Sheet
+                let totalData = 0;
+                daftar.forEach(a => {
+                    if (a.tanggalLahir && a.tanggalLahir !== "") {
+                        // Ambil tahun (Asumsi format YYYY-MM-DD atau DD/MM/YYYY)
+                        // Kita ambil 4 angka tahunnya
+                        const match = a.tanggalLahir.match(/\d{4}/);
+                        if (match) {
+                            const tahun = parseInt(match[0]);
+                            totalData++;
+                            for (let gen in stats) {
+                                if (tahun >= stats[gen].start && tahun <= stats[gen].end) {
+                                    stats[gen].count++;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 5. Render Grafik ke Layar
+                wadah.innerHTML = '';
+                for (let gen in stats) {
+                    const item = stats[gen];
+                    const persentase = totalData > 0 ? (item.count / totalData * 100) : 0;
+
+                    wadah.innerHTML += `
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="font-bold text-gray-700 text-sm">${gen}</span>
+                                <span class="text-sm font-black text-gray-400">${item.count} Jiwa</span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-6 overflow-hidden">
+                                <div class="chart-bar ${item.color} flex items-center justify-end pr-3 text-[10px] text-white font-bold" 
+                                    style="width: 0%" 
+                                    data-width="${persentase}%">
+                                    ${item.count > 0 ? Math.round(persentase) + '%' : ''}
+                                </div>
+                            </div>
+                        </div>`;
+                }
+
+                // 6. Jalankan Animasi
+                setTimeout(() => {
+                    document.querySelectorAll('.chart-bar').forEach(bar => {
+                        bar.style.width = bar.getAttribute('data-width');
+                    });
+                }, 300);
+
+            } catch (error) {
+                console.error("Gagal ambil data:", error);
+                wadah.innerHTML = `
+                    <div class="bg-red-50 p-6 rounded-2xl text-center border border-red-100">
+                        <p class="text-red-500 font-bold">Koneksi Gagal!</p>
+                        <p class="text-gray-500 text-xs mt-1">Gagal mengambil data dari Google Sheet. Cek internet Om.</p>
+                        <button onclick="location.reload()" class="mt-4 text-xs font-bold text-red-500 underline uppercase">Coba Lagi</button>
+                    </div>`;
+            }
+        }
+
+        window.onload = muatStatistikCloud;
+    </script>
+</body>
+</html>

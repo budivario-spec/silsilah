@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .header-curve {
+            background-color: #00e5ff;
+            height: 100px;
+            border-bottom-left-radius: 10% 30px;
+            border-bottom-right-radius: 10% 30px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .btn-back {
+            position: absolute;
+            left: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .search-container {
+            margin-top: 20px;
+            padding: 0 24px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            outline: none;
+        }
+        .search-input:focus {
+            border-color: #00e5ff;
+        }
+        .member-card {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 12px;
+            border: 1px solid #f0f0f0;
+            transition: transform 0.2s;
+        }
+        .member-card:active {
+            transform: scale(0.98);
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div class="header-curve">
+        <button onclick="window.location.href='index.html'" class="btn-back">←</button>
+        <h1 class="text-xl font-bold">Cari Anggota</h1>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" onkeyup="filterAnggota()" placeholder="Cari anggota keluarga..." class="search-input">
+    </div>
+
+    <div id="wadahDaftar" class="p-6 mt-2">
+        </div>
+
+    <script>
+        // 1. Fungsi Utama: Muat data dari memori (dan Cloud jika ada)
+        function muatDaftarAnggota() {
+            const wadahDaftar = document.getElementById('wadahDaftar');
+            const daftarKeluarga = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+
+            console.log("Memuat " + daftarKeluarga.length + " anggota keluarga.");
+
+            if (daftarKeluarga.length === 0) {
+                wadahDaftar.innerHTML = `
+                    <div class="text-center mt-12 px-6">
+                        <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200">
+                            <p class="text-gray-500 italic">Belum ada anggota keluarga yang terdaftar.</p>
+                            <button onclick="window.location.href='tambah-anggota.html'" class="text-[#00e5ff] font-bold mt-3 underline">
+                                + Tambah Anggota Pertama
+                            </button>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            renderData(daftarKeluarga);
+        }
+
+        // 2. Fungsi Render: Mengubah data menjadi kartu visual
+        function renderData(data) {
+            const wadahDaftar = document.getElementById('wadahDaftar');
+            wadahDaftar.innerHTML = ''; 
+
+            data.forEach(anggota => {
+                // LOGIKA PENGAMAN: Jika foto benar-benar kosong/null (data lama)
+                // Berikan SVG secara langsung di sini sebagai cadangan terakhir
+                let sumberFoto = anggota.foto;
+                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "undefined" || sumberFoto === "") {
+                    sumberFoto = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><rect width='24' height='24' fill='%2300e5ff'/><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>`;
+                }
+
+                let elemenFoto = `<img src="${sumberFoto}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm mr-4" style="border-color: #00e5ff;">`;
+
+                let infoLahir = (anggota.tempatLahir || anggota.tanggalLahir) 
+                    ? `${anggota.tempatLahir || '?'}, ${anggota.tanggalLahir || '?'}`
+                    : "Data kelahiran belum diisi";
+
+                wadahDaftar.innerHTML += `
+                    <div class="member-card shadow-sm cursor-pointer hover:bg-gray-50 flex items-center p-4 bg-white mb-3 rounded-2xl border border-gray-100" 
+                        onclick="window.location.href='tambah-anggota.html?id=${anggota.id}'">
+                        
+                        ${elemenFoto}
+                        
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-800 text-lg leading-tight">${anggota.nama}</h4>
+                            <p class="text-[11px] text-[#00e5ff] font-semibold mt-0.5 uppercase tracking-wide">${infoLahir}</p>
+                            <p class="text-xs text-gray-400 mt-1 italic leading-tight">📍 ${anggota.domisili || 'Lokasi tidak diisi'}</p>
+                        </div>
+
+                        <div class="text-gray-300 ml-2">❯</div>
+                    </div>
+                `;
+            });
+        }
+
+        // 3. Fitur Cari: Filter otomatis saat mengetik
+        function filterAnggota() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const daftarKeluarga = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            
+            const hasilFilter = daftarKeluarga.filter(anggota => 
+                anggota.nama.toLowerCase().includes(input) || 
+                (anggota.domisili && anggota.domisili.toLowerCase().includes(input))
+            );
+
+            renderData(hasilFilter);
+        }
+
+        // Jalankan otomatis
+        window.onload = muatDaftarAnggota;
+    </script>
+</body>
+</html>

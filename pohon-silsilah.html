@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .header-curve {
+            background-color: #00e5ff;
+            height: 90px;
+            border-bottom-left-radius: 10% 30px;
+            border-bottom-right-radius: 10% 30px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            z-index: 50;
+        }
+        .btn-back {
+            position: absolute;
+            left: 20px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .viewport {
+            width: 100vw;
+            height: calc(100vh - 90px);
+            overflow: auto;
+            cursor: grab;
+            background-color: #f8fafc;
+        }
+        .viewport:active { cursor: grabbing; }
+        .tree-canvas {
+            min-width: 2000px;
+            padding: 50px;
+            display: inline-block;
+        }
+
+        /* --- LOGIKA GULUNG (WAJIB ADA) --- */
+        .hidden-children {
+            display: none !important;
+        }
+
+        ul.tree { 
+            margin-left: 40px; 
+            border-left: 2px dashed #00e5ff; 
+        }
+        li.tree-item { 
+            position: relative; 
+            padding-left: 30px; 
+            margin-bottom: 20px; 
+            list-style: none; 
+        }
+        li.tree-item::before {
+            content: "";
+            position: absolute; left: 0; top: 25px; width: 25px;
+            border-top: 2px dashed #00e5ff;
+        }
+        .member-node {
+            display: inline-flex;
+            align-items: center;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            border: 2px solid #e2e8f0; /* Tebalkan sedikit agar perubahan warna terlihat */
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 overflow-hidden"> 
+    <div class="header-curve">
+        <button onclick="window.location.href='index.html'" class="btn-back">←</button>
+        <h1 class="text-xl font-bold">Eksplorasi Silsilah</h1>
+    </div>
+
+    <div id="scrollContainer" class="viewport">
+        <div id="treeWrapper" class="tree-canvas">
+            </div>
+    </div>
+
+    <script>
+        const URL_API = "https://script.google.com/macros/s/AKfycbzVJ_eQoLJQJ3gzCSCm0xwiebuqsSJwgnSHZ-yIyJuBLXGTJ90xkfMuuqbJyDzocDCpQA/exec";
+
+        async function loadDataDariCloud() {
+            try {
+                const response = await fetch(URL_API);
+                const data = await response.json();
+                // Simpan hasil dari cloud ke localStorage agar tetap bisa dibuka offline
+                localStorage.setItem('daftarKeluarga', JSON.stringify(data));
+                renderPohon(); // Render ulang setelah data terbaru datang
+            } catch (error) {
+                console.log("Gagal sinkron, menggunakan data lokal.");
+                renderPohon(); 
+            }
+        }
+
+        // Fitur Drag untuk PC
+        const slider = document.getElementById('scrollContainer');
+        let isDown = false; let startX, startY, scrollLeft, scrollTop;
+
+        slider.addEventListener('mousedown', (e) => {
+            isDown = true; startX = e.pageX - slider.offsetLeft; startY = e.pageY - slider.offsetTop;
+            scrollLeft = slider.scrollLeft; scrollTop = slider.scrollTop;
+        });
+        slider.addEventListener('mouseleave', () => isDown = false);
+        slider.addEventListener('mouseup', () => isDown = false);
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft; const y = e.pageY - slider.offsetTop;
+            slider.scrollLeft = scrollLeft - (x - startX) * 1.5;
+            slider.scrollTop = scrollTop - (y - startY) * 1.5;
+        });
+
+        function renderPohon() {
+            const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            const wrapper = document.getElementById('treeWrapper');
+            if (daftar.length === 0) {
+                wrapper.innerHTML = "<p class='text-center text-gray-400 mt-10 italic'>Belum ada data keluarga.</p>";
+                return;
+            }
+            const akarKeluarga = daftar.filter(a => a.status === 'none' || !a.parentID);
+            let htmlUtama = "";
+            akarKeluarga.forEach(kepala => htmlUtama += buildNode(kepala, daftar));
+            wrapper.innerHTML = htmlUtama;
+        }
+
+        function buildNode(orang, semuaData) {
+            // 1. Cari data Pasangan berdasarkan idPasangan
+            const pasangan = semuaData.find(a => a.id === orang.idPasangan);
+            const anakAnak = semuaData.filter(a => {
+                const isAnakKandung = a.parentID == orang.id;
+                const isAnakPasangan = pasangan ? (a.parentID == pasangan.id) : false;
+                
+                return (isAnakKandung || isAnakPasangan) && a.status === 'anak';
+            });
+            const punyaKeturunan = anakAnak.length > 0;
+
+            // --- LOGIKA TAMPILAN FOTO (UTAMA) ---
+            const fotoUtama = (orang.foto && orang.foto !== "" && !orang.foto.includes('http://127.0.0.1')) 
+                ? `<img src="${orang.foto}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">`
+                : `<div class="w-12 h-12 rounded-full bg-[#00e5ff] flex items-center justify-center shadow-sm border-2 border-white">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </div>`;
+
+            // --- LOGIKA TAMPILAN PASANGAN (JIKA ADA) ---
+            let elemenPasangan = "";
+            if (pasangan) {
+                const fotoPasangan = (pasangan.foto && pasangan.foto !== "" && !pasangan.foto.includes('http://127.0.0.1'))
+                    ? `<img src="${pasangan.foto}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm -ml-3">`
+                    : `<div class="w-12 h-12 rounded-full bg-pink-400 flex items-center justify-center -ml-3 shadow-sm border-2 border-white">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </div>`;
+                
+                elemenPasangan = `
+                    <div class="flex items-center ml-2 border-l-2 border-gray-100 pl-3">
+                        ${fotoPasangan}
+                        <div class="ml-2">
+                            <p class="font-bold text-gray-700 leading-tight text-sm">${pasangan.nama}</p>
+                        </div>
+                    </div>`;
+            }
+
+            let eventKlik = punyaKeturunan ? `onclick="toggleChildren(this, '${orang.id}')"` : "";
+            let kursor = punyaKeturunan ? "cursor-pointer" : "cursor-default";
+            let borderStyle = punyaKeturunan ? "border-color: #ffa000;" : "border-color: #e2e8f0;";
+
+            let nodeHtml = `
+                <div class="tree-item-group mb-6">
+                    <div class="flex items-center">
+                        <div class="member-node ${kursor} active:scale-95 transition-transform flex items-center" ${eventKlik} id="node-${orang.id}" style="${borderStyle}">
+                            
+                            <div class="flex items-center">
+                                ${fotoUtama}
+                                <div class="ml-3">
+                                    <p class="font-bold text-gray-800 leading-tight text-lg">${orang.nama}</p>
+                                    <p class="text-sm text-gray-600 italic leading-snug whitespace-normal max-w-[180px] sm:max-w-[250px]">
+                                        📍 ${orang.domisili || 'Lokasi belum diisi'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            ${elemenPasangan}
+
+                            ${punyaKeturunan ? '<span id="indicator-'+orang.id+'" class="text-[12px] text-orange-500 font-bold ml-4">▶</span>' : ''}
+                        </div>
+                    </div>
+            `;
+
+            if (punyaKeturunan) {
+                nodeHtml += `<ul class="tree mt-4 hidden-children" id="children-${orang.id}">`;
+                anakAnak.forEach(anak => {
+                    nodeHtml += `<li class="tree-item">`;
+                    nodeHtml += buildNode(anak, semuaData); // Rekursif ke bawah
+                    nodeHtml += `</li>`;
+                });
+                nodeHtml += `</ul>`;
+            }
+
+            nodeHtml += `</div>`;
+            return nodeHtml;
+        }
+
+        function toggleChildren(el, id) {
+            const targetUl = document.getElementById(`children-${id}`);
+            const indicator = document.getElementById(`indicator-${id}`);
+            if (targetUl) {
+                const isHidden = targetUl.classList.toggle('hidden-children');
+                if (isHidden) {
+                    el.style.borderColor = "#ffa000";
+                    if(indicator) indicator.innerText = "▶";
+                } else {
+                    el.style.borderColor = "#e2e8f0";
+                    if(indicator) indicator.innerText = "▼";
+                }
+            }
+        }
+
+        window.onload = loadDataDariCloud;
+    </script>
+</body>
+</html>

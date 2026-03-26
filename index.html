@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00e5ff">
+    <meta name="apple-mobile-web-app-status-bar-style" content="#00e5ff">
+    <title>Silsilah Keluarga Mbah Muntari</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8f9fa; font-family: sans-serif; }
+        
+        /* Lengkungan Header Tosca */
+        .header-curve {
+            background-color: #00e5ff;
+            height: 90px;
+            border-bottom-left-radius: 10% 30px;
+            border-bottom-right-radius: 10% 30px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        /* Grid Menu */
+        .menu-card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
+            transition: transform 0.2s;
+            cursor: pointer; /* Agar muncul kursor tangan saat di desktop */
+            -webkit-tap-highlight-color: transparent; /* Menghilangkan kotak biru saat di-tap di HP */
+        }
+        
+        .menu-card:active { transform: scale(0.95); }
+        .menu-icon { font-size: 24px; margin-bottom: 8px; color: #00b8d4; }
+        .menu-label { font-size: 11px; font-weight: 600; color: #555; line-height: 1.2; }
+        .menu-value { font-size: 14px; font-weight: bold; color: #333; margin-top: 2px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-curve">
+        <h1 class="text-xl font-bold mt-4">Beranda</h1>
+    </div>
+
+    <div class="px-6">
+        <h2 class="text-lg font-bold my-4">Halo, Om Budi!</h2>
+            <div class="grid grid-cols-3 gap-3">
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+            <div class="menu-card">
+                <span class="menu-icon">👥</span>
+                <span class="menu-label">Jumlah Anggota</span>
+                <span class="menu-value" id="angkaJumlah">0</span>
+            </div>
+            <div class="menu-card" onclick="window.location.href='statistik.html'">
+                <span class="menu-icon">🌿</span>
+                <span class="menu-label">Jumlah Generasi</span>
+                <span class="menu-value" id="angkaTotalGenerasi">0</span>
+            </div>
+            <div class="menu-card">
+                <span class="menu-icon">📅</span>
+                <span class="menu-label">Acara Terdekat</span>
+                <span class="menu-value">0</span>
+            </div>
+
+            <div class="menu-card">
+                <span class="menu-icon">🗓️</span>
+                <span class="menu-label">Acara Keluarga</span>
+            </div>
+            <div class="menu-card" onclick="window.location.href='tambah-anggota.html'">
+                <span class="menu-icon">➕</span>
+                <span class="menu-label">Tambah Anggota</span>
+            </div>
+            <div class="menu-card" onclick="window.location.href='cari-anggota.html'">
+                <span class="menu-icon">🔍</span>
+                <span class="menu-label">Cari Anggota</span>
+            </div>
+
+            <div class="menu-card">
+                <span class="menu-icon">🔄</span>
+                <span class="menu-label">Kirim / Simpan Data</span>
+            </div>
+            <div class="menu-card" onclick="window.location.href='pohon-silsilah.html'">
+                <span class="menu-icon">🌳</span>
+                <span class="menu-label">Lihat Silsilah</span>
+            </div>
+            <div class="menu-card">
+                <span class="menu-icon">🏠</span>
+                <span class="menu-label">Ruang Keluarga</span>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <h3 class="font-bold text-gray-800">Kabar Terbaru</h3>
+            <p class="text-center text-gray-400 mt-10 italic">Belum ada kabar</p>
+        </div>
+    </div>
+    
+    <script>
+        // 1. Definisikan URL API Om di sini
+        const URL_API = "https://script.google.com/macros/s/AKfycbzVJ_eQoLJQJ3gzCSCm0xwiebuqsSJwgnSHZ-yIyJuBLXGTJ90xkfMuuqbJyDzocDCpQA/exec"; 
+
+        async function perbaruiDashboard() {
+            // --- Bagian 1: Ambil dari LocalStorage (Cepat/Instan) ---
+            const daftarLokal = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            const elJumlah = document.getElementById('angkaJumlah');
+            if(elJumlah) elJumlah.innerText = daftarLokal.length;
+
+            // --- Bagian 2: Ambil dari Cloud (Untuk Statistik & Update Terbaru) ---
+            try {
+                const response = await fetch(URL_API);
+                const daftarCloud = await response.json();
+                
+                // Update LocalStorage agar data terbaru tersimpan
+                localStorage.setItem('daftarKeluarga', JSON.stringify(daftarCloud));
+                
+                // Update Jumlah Anggota (Versi Cloud terbaru)
+                if(elJumlah) elJumlah.innerText = daftarCloud.length;
+
+                // Hitung Rentang Generasi
+                let setGenerasi = new Set();
+                daftarCloud.forEach(a => {
+                    if (a.tanggalLahir) {
+                        const match = a.tanggalLahir.match(/\d{4}/);
+                        if (match) {
+                            const tahun = parseInt(match[0]);
+                            if (tahun >= 2013) setGenerasi.add("Alpha");
+                            else if (tahun >= 1997) setGenerasi.add("Z");
+                            else if (tahun >= 1981) setGenerasi.add("Milenial");
+                            else if (tahun >= 1965) setGenerasi.add("X");
+                            else if (tahun >= 1946) setGenerasi.add("Boomers");
+                        }
+                    }
+                });
+
+                // Update angka di menu Jumlah Generasi
+                const elGen = document.getElementById('angkaTotalGenerasi');
+                if(elGen) elGen.innerText = setGenerasi.size;
+
+            } catch (err) {
+                console.log("Gagal sinkronisasi cloud, menggunakan data lokal.", err);
+            }
+        }
+
+        // Jalankan fungsi saat halaman dimuat
+        window.onload = perbaruiDashboard;
+
+        // Registrasi Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker aktif!', reg))
+                    .catch(err => console.log('SW Gagal:', err));
+            });
+        }
+    </script>
+
+</body>
+</html>
