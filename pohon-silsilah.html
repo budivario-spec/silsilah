@@ -130,94 +130,95 @@
         }
 
         function buildNode(orang, semuaData) {
-    // === 1. LOGIKA PENCARIAN PASANGAN (DIPERBAIKI) ===
-    // Cari pasangan secara dua arah (mutual) agar Budi dan Anif saling menemukan.
-    const pasangan = semuaData.find(a => 
-        // A. Cek apakah saya (Budi) menunjuk dia (Anif) sebagai pasangan
-        (orang.idPasangan && a.id === orang.idPasangan) || 
-        // B. Cek apakah dia (Anif) menunjuk saya (Budi) sebagai pasangan
-        (a.idPasangan === orang.id)
-    );
+            // 1. Cari data Pasangan berdasarkan idPasangan
+            const pasangan = semuaData.find(a => a.id === orang.idPasangan);
+            const anakAnak = semuaData.filter(a => {
+                const isAnakKandung = a.parentID == orang.id;
+                const isAnakPasangan = pasangan ? (a.parentID == pasangan.id) : false;
+                
+                return (isAnakKandung || isAnakPasangan) && a.status === 'anak';
+            });
+            const punyaKeturunan = anakAnak.length > 0;
 
-    // === 2. LOGIKA PENCARIAN ANAK (TETAP SAMA) ===
-    // Cari anak: Anak dari saya ATAU anak dari pasangan saya
-    const anakAnak = semuaData.filter(a => {
-        const isAnakKandung = a.parentID == orang.id;
-        const isAnakPasangan = pasangan ? (a.parentID == pasangan.id) : false;
-        
-        // Pastikan statusnya memang 'anak'
-        return (isAnakKandung || isAnakPasangan) && a.status === 'anak';
-    });
-    
-    const punyaKeturunan = anakAnak.length > 0;
+            // --- LOGIKA TAMPILAN FOTO (UTAMA) ---
+            const fotoUtama = (orang.foto && orang.foto !== "" && !orang.foto.includes('http://127.0.0.1')) 
+                ? `<img src="${orang.foto}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">`
+                : `<div class="w-12 h-12 rounded-full bg-[#00e5ff] flex items-center justify-center shadow-sm border-2 border-white">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </div>`;
 
-    // === 3. LOGIKA TAMPILAN FOTO (TETAP SAMA) ===
-    const fotoUtama = (orang.foto && orang.foto !== "" && !orang.foto.includes('http://127.0.0.1')) 
-        ? `<img src="${orang.foto}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">`
-        : `<div class="w-12 h-12 rounded-full bg-[#00e5ff] flex items-center justify-center shadow-sm border-2 border-white">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        </div>`;
+            // --- LOGIKA TAMPILAN PASANGAN (JIKA ADA) ---
+            let elemenPasangan = "";
+            if (pasangan) {
+                const fotoPasangan = (pasangan.foto && pasangan.foto !== "" && !pasangan.foto.includes('http://127.0.0.1'))
+                    ? `<img src="${pasangan.foto}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm -ml-3">`
+                    : `<div class="w-12 h-12 rounded-full bg-pink-400 flex items-center justify-center -ml-3 shadow-sm border-2 border-white">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </div>`;
+                
+                elemenPasangan = `
+                    <div class="flex items-center ml-2 border-l-2 border-gray-100 pl-3">
+                        ${fotoPasangan}
+                        <div class="ml-2">
+                            <p class="font-bold text-gray-700 leading-tight text-sm">${pasangan.nama}</p>
+                        </div>
+                    </div>`;
+            }
 
-    // === 4. LOGIKA TAMPILAN PASANGAN (TETAP SAMA) ===
-    let elemenPasangan = "";
-    if (pasangan) {
-        const fotoPasangan = (pasangan.foto && pasangan.foto !== "" && !pasangan.foto.includes('http://127.0.0.1'))
-            ? `<img src="${pasangan.foto}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm -ml-3">`
-            : `<div class="w-12 h-12 rounded-full bg-pink-400 flex items-center justify-center -ml-3 shadow-sm border-2 border-white">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            </div>`;
-        
-        elemenPasangan = `
-            <div class="flex items-center ml-2 border-l-2 border-gray-100 pl-3">
-                ${fotoPasangan}
-                <div class="ml-2">
-                    <p class="font-bold text-gray-700 leading-tight text-sm">${pasangan.nama}</p>
-                </div>
-            </div>`;
-    }
+            let eventKlik = punyaKeturunan ? `onclick="toggleChildren(this, '${orang.id}')"` : "";
+            let kursor = punyaKeturunan ? "cursor-pointer" : "cursor-default";
+            let borderStyle = punyaKeturunan ? "border-color: #ffa000;" : "border-color: #e2e8f0;";
 
-    // === 5. LOGIKA INTERAKSI (TETAP SAMA) ===
-    let eventKlik = punyaKeturunan ? `onclick="toggleChildren(this, '${orang.id}')"` : "";
-    let kursor = punyaKeturunan ? "cursor-pointer" : "cursor-default";
-    let borderStyle = punyaKeturunan ? "border-color: #ffa000;" : "border-color: #e2e8f0;";
-
-    // === 6. HTML OUTPUT (TETAP SAMA) ===
-    let nodeHtml = `
-        <div class="tree-item-group mb-6">
-            <div class="flex items-center">
-                <div class="member-node ${kursor} active:scale-95 transition-transform flex items-center" ${eventKlik} id="node-${orang.id}" style="${borderStyle}">
-                    
+            let nodeHtml = `
+                <div class="tree-item-group mb-6">
                     <div class="flex items-center">
-                        ${fotoUtama}
-                        <div class="ml-3">
-                            <p class="font-bold text-gray-800 leading-tight text-lg">${orang.nama}</p>
-                            <p class="text-sm text-gray-600 italic leading-snug whitespace-normal max-w-[180px] sm:max-w-[250px]">
-                                📍 ${orang.domisili || 'Lokasi belum diisi'}
-                            </p>
+                        <div class="member-node ${kursor} active:scale-95 transition-transform flex items-center" ${eventKlik} id="node-${orang.id}" style="${borderStyle}">
+                            
+                            <div class="flex items-center">
+                                ${fotoUtama}
+                                <div class="ml-3">
+                                    <p class="font-bold text-gray-800 leading-tight text-lg">${orang.nama}</p>
+                                    <p class="text-sm text-gray-600 italic leading-snug whitespace-normal max-w-[180px] sm:max-w-[250px]">
+                                        📍 ${orang.domisili || 'Lokasi belum diisi'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            ${elemenPasangan}
+
+                            ${punyaKeturunan ? '<span id="indicator-'+orang.id+'" class="text-[12px] text-orange-500 font-bold ml-4">▶</span>' : ''}
                         </div>
                     </div>
+            `;
 
-                    ${elemenPasangan}
+            if (punyaKeturunan) {
+                nodeHtml += `<ul class="tree mt-4 hidden-children" id="children-${orang.id}">`;
+                anakAnak.forEach(anak => {
+                    nodeHtml += `<li class="tree-item">`;
+                    nodeHtml += buildNode(anak, semuaData); // Rekursif ke bawah
+                    nodeHtml += `</li>`;
+                });
+                nodeHtml += `</ul>`;
+            }
 
-                    ${punyaKeturunan ? '<span id="indicator-'+orang.id+'" class="text-[12px] text-orange-500 font-bold ml-4">▶</span>' : ''}
-                </div>
-            </div>
-    `;
+            nodeHtml += `</div>`;
+            return nodeHtml;
+        }
 
-    // === 7. REKURSIF KE BAWAH (TETAP SAMA) ===
-    if (punyaKeturunan) {
-        nodeHtml += `<ul class="tree mt-4 hidden-children" id="children-${orang.id}">`;
-        anakAnak.forEach(anak => {
-            nodeHtml += `<li class="tree-item">`;
-            nodeHtml += buildNode(anak, semuaData); // Rekursif ke bawah
-            nodeHtml += `</li>`;
-        });
-        nodeHtml += `</ul>`;
-    }
-
-    nodeHtml += `</div>`;
-    return nodeHtml;
-}
+        function toggleChildren(el, id) {
+            const targetUl = document.getElementById(`children-${id}`);
+            const indicator = document.getElementById(`indicator-${id}`);
+            if (targetUl) {
+                const isHidden = targetUl.classList.toggle('hidden-children');
+                if (isHidden) {
+                    el.style.borderColor = "#ffa000";
+                    if(indicator) indicator.innerText = "▶";
+                } else {
+                    el.style.borderColor = "#e2e8f0";
+                    if(indicator) indicator.innerText = "▼";
+                }
+            }
+        }
 
         window.onload = loadDataDariCloud;
     </script>
