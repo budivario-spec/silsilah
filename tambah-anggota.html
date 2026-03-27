@@ -405,13 +405,12 @@
         [inputNama, inputAlamat].forEach(input => {
             if (input) {
                 input.addEventListener('input', function() {
-                    // Simpan posisi kursor agar tidak loncat
                     const start = this.selectionStart;
                     
-                    // Ubah teks jadi Kapital di Awal Kata
-                    this.value = this.value.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+                    // PERBAIKAN: Panggil fungsi buatKapital(this.value) 
+                    // supaya RT, RW, dan Romawi ikut terproses
+                    this.value = buatKapital(this.value);
                     
-                    // Kembalikan posisi kursor
                     this.setSelectionRange(start, start);
                 });
             }
