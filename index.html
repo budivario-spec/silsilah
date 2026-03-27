@@ -114,6 +114,18 @@
         // 1. Definisikan URL API Om di sini
         const URL_API = "https://script.google.com/macros/s/AKfycbzVJ_eQoLJQJ3gzCSCm0xwiebuqsSJwgnSHZ-yIyJuBLXGTJ90xkfMuuqbJyDzocDCpQA/exec"; 
 
+        // Di halaman beranda (index.html)
+        function tampilkanStatistik() {
+            // 1. Ambil data lama dari localStorage (Instan!)
+            const dataLokal = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            if (dataLokal.length > 0) {
+                document.getElementById('jumlahGenerasi').innerText = hitungGenerasi(dataLokal);
+            }
+
+            // 2. Baru kemudian panggil data terbaru dari Cloud
+            loadDataDariCloud(); 
+        }
+
         async function perbaruiDashboard() {
             // --- Bagian 1: Ambil dari LocalStorage (Cepat/Instan) ---
             const daftarLokal = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
