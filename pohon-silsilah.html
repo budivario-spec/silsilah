@@ -75,8 +75,8 @@
     <div id="loadingOverlay" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6 text-center">
         <div class="w-16 h-16 border-4 border-[#00e5ff] border-t-transparent rounded-full animate-spin mb-6"></div>
         
-        <p id="loadingText" class="text-lg font-bold text-gray-700 animate-pulse">
-            Sedang menjemput data keluarga...
+        <p id="loadingText" class="text-lg font-bold text-gray-700 mt-4" style="transition: opacity 0.5s;">
+            Sedang mengumpulkan data keluarga...
         </p>
         <p class="text-sm text-gray-400 mt-2">Mohon sabar, ini ujian kesabaran silsilah.</p>
     </div>
@@ -103,14 +103,29 @@
             "Mempersiapkan pohon, pastikan akarnya kuat seperti cinta keluarga."
         ];
 
-        let indexKalimat = 0;
+        // FUNGSI UNTUK MENAMPILKAN KALIMAT ACAK
+        function tampilkanKalimatAcak() {
+            const el = document.getElementById('loadingText');
+            if (el) {
+                const indexAcak = Math.floor(Math.random() * kalimatLucu.length);
+                el.innerText = kalimatLucu[indexAcak];
+            }
+        }
+
+        // JALANKAN PERTAMA KALI (INSTAN)
+        tampilkanKalimatAcak();
+
+        // JALANKAN BERIKUTNYA SECARA BERKALA (SETIAP 3.5 DETIK)
         const intervalKalimat = setInterval(() => {
             const el = document.getElementById('loadingText');
             if (el) {
-                indexKalimat = (indexKalimat + 1) % kalimatLucu.length;
-                el.innerText = kalimatLucu[indexKalimat];
+                el.style.opacity = 0; // Efek fade out
+                setTimeout(() => {
+                    tampilkanKalimatAcak(); // Ganti teks secara acak
+                    el.style.opacity = 1; // Efek fade in
+                }, 500);
             }
-        }, 5300); // Ganti kalimat setiap 1.5 detik
+        }, 3500);
 
         // FUNGSI UNTUK MENGHILANGKAN LOADING
         function sembunyikanLoading() {
