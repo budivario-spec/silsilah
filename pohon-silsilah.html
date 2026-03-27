@@ -118,7 +118,7 @@
             }
 
             // 3. Pilih satu templat kalimat acak
-            const templat = kalimatLucu[Math.floor(Math.random() * templatKalimat.length)];
+            const templat = kalimatLucu[Math.floor(Math.random() * kalimatLucu.length)];
 
             // 4. Masukkan nama ke dalam templat
             el.innerText = templat.replace("{nama}", namaAcak);
