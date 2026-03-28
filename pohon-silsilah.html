@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         .header-curve {
             background-color: #00e5ff;
@@ -68,6 +69,20 @@
             border: 2px solid #e2e8f0; /* Tebalkan sedikit agar perubahan warna terlihat */
             transition: all 0.3s ease;
         }
+
+        /* Efek saat kartu ditekan lama tapi belum bisa geser (0-5 detik) */
+        .tree-item:active {
+            background-color: #fff9c4 !important; /* Kuning pucat */
+            transition: background-color 5s linear;
+        }
+
+        /* Efek saat kartu sudah "lepas" dan siap digeser (setelah 5 detik) */
+        .sortable-chosen {
+            background-color: #e0f7fa !important;
+            border: 2px solid #00e5ff !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+            cursor: grabbing !important;
+        }
     </style>
 </head>
 
@@ -94,7 +109,7 @@
         const URL_API = "https://script.google.com/macros/s/AKfycbzVJ_eQoLJQJ3gzCSCm0xwiebuqsSJwgnSHZ-yIyJuBLXGTJ90xkfMuuqbJyDzocDCpQA/exec";
 
         const kalimatLucu = [ // Pastikan namanya konsisten
-            "Sabar, lagi nyari foto {nama} yang paling ganteng...",
+            "Sabar, lagi nyari foto {nama} yang paling glowing...",
             "Sedang menghubungkan tali keluarga ...",
             "Bentar, lagi nanya ke sesepuh siapa saja cucu-cucunya...",
             "Lagi nyusun silsilah, jangan sampai ada yang ketuker!",
@@ -189,6 +204,9 @@
             let htmlUtama = "";
             akarKeluarga.forEach(kepala => htmlUtama += buildNode(kepala, daftar));
             wrapper.innerHTML = htmlUtama;
+          
+            // AKTIFKAN FITUR GESER SETELAH RENDER SELESAI
+                aktifkanFiturGeser();  
             
             // --- PANGGIL INI AGAR LOADING HILANG ---
                 sembunyikanLoading();
@@ -257,10 +275,16 @@
             `;
 
             if (punyaKeturunan) {
-                nodeHtml += `<ul class="tree mt-4 hidden-children" id="children-${orang.id}">`;
+                // Tambahkan class 'list-anak' dan ID yang unik
+                nodeHtml += `<ul class="tree mt-4 hidden-children list-anak" id="children-${orang.id}">`;
+                
+                // URUTKAN TERLEBIH DAHULU berdasarkan anakKe
+                anakAnak.sort((a, b) => (a.anakKe || 99) - (b.anakKe || 99));
+
                 anakAnak.forEach(anak => {
-                    nodeHtml += `<li class="tree-item">`;
-                    nodeHtml += buildNode(anak, semuaData); // Rekursif ke bawah
+                    // Tambahkan class 'tree-item' dan data-id agar bisa dikenali saat digeser
+                    nodeHtml += `<li class="tree-item kartu-anak" data-id="${anak.id}">`;
+                    nodeHtml += buildNode(anak, semuaData); 
                     nodeHtml += `</li>`;
                 });
                 nodeHtml += `</ul>`;
@@ -283,6 +307,53 @@
                     if(indicator) indicator.innerText = "▼";
                 }
             }
+        }
+
+        function aktifkanFiturGeser() {
+            const semuaListAnak = document.querySelectorAll('.list-anak');
+
+            semuaListAnak.forEach(listEl => {
+                Sortable.create(listEl, {
+                    animation: 150,
+                    delay: 5000,          // Kunci 5 detik (5000ms)
+                    delayOnTouchOnly: false, // MATIKAN ini agar mouse juga kena delay
+                    touchStartThreshold: 5, // Toleransi goyangan jari/mouse sedikit
+                    draggable: ".tree-item",
+                    ghostClass: "bg-blue-50", // Warna bayangan saat digeser
+                    chosenClass: "scale-105",  // Efek membesar saat terpilih
+                    onEnd: function () {
+                        // Simpan setiap kali selesai geser
+                        simpanUrutanBaru(listEl);
+                    },
+                });
+            });
+        }
+
+        function simpanUrutanBaru(kontainer) {
+            // 1. Ambil data master dari localStorage
+            let daftarMaster = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            
+            // 2. Ambil semua kartu anak di DALAM kontainer yang baru saja digeser
+            const semuaKartuDiSini = kontainer.querySelectorAll('.kartu-anak');
+            
+            semuaKartuDiSini.forEach((kartu, index) => {
+                const idAnak = kartu.getAttribute('data-id');
+                
+                // Cari orangnya di daftar master dan update nomor urutnya
+                const indexOrang = daftarMaster.findIndex(a => a.id == idAnak);
+                if (indexOrang !== -1) {
+                    daftarMaster[indexOrang].anakKe = index + 1;
+                    console.log(`Update ${daftarMaster[indexOrang].nama} jadi urutan ${index + 1}`);
+                }
+            });
+
+            // 3. Simpan kembali daftar master yang sudah terupdate ke localStorage
+            localStorage.setItem('daftarKeluarga', JSON.stringify(daftarMaster));
+            
+            // 4. (Opsional) Kirim ke Google Sheets agar permanen di cloud
+            // kirimUpdateKeCloud(daftarMaster); 
+            
+            console.log("Urutan Bani Muntari permanen di lokal!");
         }
 
         window.onload = loadDataDariCloud;
