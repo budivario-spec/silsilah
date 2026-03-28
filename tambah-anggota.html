@@ -191,19 +191,19 @@
         </div>
 
         <div id="groupRelasi" class="input-group hidden">
-            <label class="text-xs text-gray-500 ml-2">Terhubung Dengan:</label>
-            <select id="parentID" class="input-outline bg-white">
-                <option value="">-- Pilih Anggota Keluarga --</option>
-            </select>
+            <label class="text-xs text-gray-500 ml-2">Anak dari... atau Pasangan (Suami/Istri) dari... :</label>
+            <input type="text" id="inputCariParent" list="daftarKeluargaCari" class="input-outline bg-white" placeholder="Ketik nama orang tua...">
+            <input type="hidden" id="parentID"> 
         </div>
 
         <div class="mb-4" id="groupPasangan">
-            <label class="block text-gray-600 text-sm font-semibold mb-2">Pilih Pasangan (Suami/Istri)</label>
-            <select id="idPasangan" class="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none focus:border-[#00e5ff] appearance-none text-gray-700">
-                <option value="">-- Tidak ada / Belum dipilih --</option>
-                </select>
-            <p class="text-[10px] text-gray-400 mt-1 italic">*Jika pasangan belum terdaftar, simpan dulu orang ini, lalu edit kembali setelah pasangan diinput.</p>
+            <label class="block text-gray-600 text-sm font-semibold mb-2 ml-2">Pilih Pasangan (Suami/Istri)</label>
+            <input type="text" id="inputCariPasangan" list="daftarKeluargaCari" class="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none focus:border-[#00e5ff] text-gray-700" placeholder="Ketik nama pasangan...">
+            <input type="hidden" id="idPasangan"> 
+            <p class="text-[10px] text-gray-400 mt-1 italic ml-2">*Kosongkan jika belum menikah / belum terdaftar.</p>
         </div>
+
+        <datalist id="daftarKeluargaCari"></datalist>
 
         <div class="profile-pic-container">
             <img id="profilePreview" src="" class="hidden w-full h-full rounded-full object-cover border-4 border-white shadow-sm">
@@ -241,8 +241,10 @@
         const idAnggotaEdit = urlParams.get('id');
 
         window.onload = function() {
-            // Muat opsi keluarga dulu agar dropdown terisi
-            muatOpsiKeluarga();
+            // 1. ISI DATALIST SAAT HALAMAN DIBUKA
+            updateDatalistNama(); 
+
+            muatOpsiKeluarga(); // Tetap jalankan jika Om masih pakai select lama di tempat lain
 
             if (idAnggotaEdit) {
                 document.getElementById('judulHalaman').innerText = "Edit Anggota";
@@ -252,13 +254,45 @@
             }
         };
 
+        // Logika Tampil/Sembunyi hanya untuk 'Terhubung Dengan' (Orang Tua)
         statusSelect.addEventListener('change', function() {
-            if (this.value !== 'none') {
+            const status = this.value;
+            const groupRelasi = document.getElementById('groupRelasi');
+
+            // groupRelasi (Anak Dari) hanya muncul jika statusnya 'anak'
+            if (status === 'anak') {
                 groupRelasi.classList.remove('hidden');
             } else {
                 groupRelasi.classList.add('hidden');
+                document.getElementById('inputCariParent').value = ""; // Reset jika bukan anak
+                document.getElementById('parentID').value = "";
             }
+            // groupPasangan TIDAK di-toggle hidden agar tetap muncul terus
         });
+
+        // Fungsi sinkronisasi Nama ke ID (Pastikan ini ada agar ID tertangkap)
+        function sinkronkanInputKeID(idInputText, idInputHidden) {
+            const txtInput = document.getElementById(idInputText);
+            const hiddenID = document.getElementById(idInputHidden);
+
+            txtInput.addEventListener('input', function() {
+                const val = this.value;
+                const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+                const ketemu = daftar.find(o => o.nama.toLowerCase() === val.toLowerCase());
+
+                if (ketemu) {
+                    hiddenID.value = ketemu.id;
+                    this.style.borderColor = "#00e5ff"; 
+                } else {
+                    hiddenID.value = ""; 
+                    this.style.borderColor = val.length > 0 ? "orange" : ""; 
+                }
+            });
+        }
+
+        // Aktifkan pencarian untuk kedua input
+        sinkronkanInputKeID('inputCariParent', 'parentID');
+        sinkronkanInputKeID('inputCariPasangan', 'idPasangan');
 
         function muatOpsiKeluarga() {
             const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
@@ -289,6 +323,15 @@
                     parentSelect.value = data.parentID || "";
                 }
 
+                if (data.parentID) {
+                    const ortu = daftar.find(o => o.id == data.parentID);
+                    if (ortu) document.getElementById('inputCariParent').value = ortu.nama;
+                }
+                if (data.idPasangan) {
+                    const pasangan = daftar.find(o => o.id == data.idPasangan);
+                    if (pasangan) document.getElementById('inputCariPasangan').value = pasangan.nama;
+                }
+
                 if (data.foto && data.foto !== "") {
                     previewImage.src = data.foto;
                     previewImage.classList.remove('hidden');
@@ -314,6 +357,58 @@
                 }
             });
         }
+
+        // Fungsi mengisi Datalist (panggil saat window.onload)
+        function updateDatalistNama() {
+            const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            const datalist = document.getElementById('daftarKeluargaCari');
+            datalist.innerHTML = "";
+            
+            // Urutkan A-Z
+            daftar.sort((a, b) => a.nama.localeCompare(b.nama));
+
+            daftar.forEach(orang => {
+                if (orang.id != idAnggotaEdit) {
+                    const option = document.createElement('option');
+                    option.value = orang.nama; 
+                    datalist.appendChild(option);
+                }
+            });
+        }
+
+        // Fungsi sinkronisasi Nama ke ID
+        function sinkronkanInputKeID(idInputText, idInputHidden) {
+            const txtInput = document.getElementById(idInputText);
+            const hiddenID = document.getElementById(idInputHidden);
+
+            txtInput.addEventListener('input', function() {
+                const val = this.value;
+                const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+                const ketemu = daftar.find(o => o.nama.toLowerCase() === val.toLowerCase());
+
+                if (ketemu) {
+                    hiddenID.value = ketemu.id;
+                    this.style.borderColor = "#00e5ff"; // Warna fokus jika data valid
+                } else {
+                    hiddenID.value = ""; // Jika nama tidak terdaftar, ID dikosongkan
+                    this.style.borderColor = "orange"; // Penanda bahwa ini nama baru/bebas
+                }
+            });
+        }
+
+        // Aktifkan fungsi pencarian
+        sinkronkanInputKeID('inputCariParent', 'parentID');
+        sinkronkanInputKeID('inputCariPasangan', 'idPasangan');
+
+        // Logika Tampil/Sembunyi berdasarkan Status Kekerabatan
+        document.getElementById('statusKekerabatan').addEventListener('change', function() {
+            const status = this.value;
+            const groupRelasi = document.getElementById('groupRelasi');
+            const groupPasangan = document.getElementById('groupPasangan');
+
+            groupRelasi.classList.toggle('hidden', status !== 'anak');
+            groupPasangan.classList.toggle('hidden', status !== 'pasangan');
+        });
 
         async function simpanAnggota() {
             const currentId = idAnggotaEdit ? idAnggotaEdit : Date.now().toString();

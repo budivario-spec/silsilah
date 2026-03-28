@@ -8,6 +8,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="#00e5ff">
     <title>Silsilah Keluarga Mbah Muntari</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <style>
         body { background-color: #f8f9fa; font-family: sans-serif; }
         
@@ -41,6 +43,15 @@
             transition: transform 0.2s;
             cursor: pointer; /* Agar muncul kursor tangan saat di desktop */
             -webkit-tap-highlight-color: transparent; /* Menghilangkan kotak biru saat di-tap di HP */
+        }
+
+        /* Warna titik navigasi saat aktif */
+        .swiper-pagination-bullet-active {
+            background: #00e5ff !important;
+        }
+        /* Jarak agar konten di bawah slider tidak tertabrak */
+        .swiper {
+            margin-bottom: 30px;
         }
         
         .menu-card:active { transform: scale(0.95); }
@@ -104,9 +115,62 @@
             </div>
         </div>
 
-        <div class="mt-8">
-            <h3 class="font-bold text-gray-800">Kabar Terbaru</h3>
-            <p class="text-center text-gray-400 mt-10 italic">Belum ada kabar</p>
+        <div class="mt-8 mb-10">
+            <h3 class="font-bold text-gray-800 mb-4 px-1">Kabar Terbaru & Promo</h3>
+            
+            <div class="swiper mySwiper w-full h-auto rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                <div class="swiper-wrapper">
+                    
+                    <div class="swiper-slide bg-gray-50">
+                        <a href="https://wa.me/+6285314100080" target="_blank" class="block w-full h-full active:scale-95 transition-transform duration-150">
+                            <img src="iklan/kopi-klepon.jpeg" 
+                                alt="Promo Kopi Klepon" 
+                                class="w-full h-48 object-cover aspect-[2/1]">
+                            <div class="p-4">
+                                <h4 class="font-bold text-gray-800 text-sm">Secangkir kesederhanaan, sebotol kebahagiaan</h4>
+                                <p class="text-xs text-gray-500 mt-1">Klik untuk pesan via WhatsApp.</p>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="swiper-slide bg-gray-50">
+                        <a href="https://wa.me/+6281392470407" target="_blank" class="block w-full h-full" class="block w-full h-full active:scale-95 transition-transform duration-150">
+                            <img src="iklan/sastro-kuas.jpg" 
+                                alt="Jasa Lukis Dinding dan Kanvas" 
+                                class="w-full h-48 object-cover aspect-[2/1]">
+                            <div class="p-4">
+                                <h4 class="font-bold text-gray-800 text-sm">Jasa Lukis Dinding dan Kanvas</h4>
+                                <p class="text-xs text-gray-500 mt-1">Klik untuk pesan via WhatsApp.</p>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="swiper-slide bg-gray-50">
+                        <a href="https://wa.me/+6281244397735" target="_blank" class="block w-full h-full" class="block w-full h-full active:scale-95 transition-transform duration-150">
+                            <img src="iklan/ruang-iklan.jpg" 
+                                alt="Space Iklan" 
+                                class="w-full h-48 object-cover aspect-[2/1]">
+                            <div class="p-4">
+                                <h4 class="font-bold text-gray-800 text-sm">Pasang Iklan di Sini</h4>
+                                <p class="text-xs text-gray-500 mt-1">Klik untuk pesan via WhatsApp.</p>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="swiper-slide bg-gray-50">                        
+                        <img src="galeri/lebaran-2026.jpeg" 
+                            alt="Space Iklan" 
+                            class="w-full h-48 object-cover aspect-[2/1]">
+                        <div class="p-4">
+                            <h4 class="font-bold text-gray-800 text-sm">Lebaran 2026</h4>
+                            <p class="text-xs text-gray-500 mt-1">Silaturahmi keluarga Ibu Sudarsiyah Binti Kasdar ke keluarga Pak Suwandi Bin Toyib </p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="swiper-pagination"></div>
+            </div>
         </div>
     </div>
     
@@ -169,6 +233,50 @@
                     .catch(err => console.log('SW Gagal:', err));
             });
         }
+
+        function tampilkanIklanAcak() {
+            const banner = document.getElementById('imgIklan');
+            const link = document.getElementById('linkIklan');
+            
+            if (daftarPromo.length > 0) {
+                // Ambil acak dari daftar
+                const acak = daftarPromo[Math.floor(Math.random() * daftarPromo.length)];
+                
+                banner.src = acak.gambar;
+                link.href = acak.link;
+                banner.alt = acak.alt;
+            }
+        }
+
+        // Jalankan saat halaman dimuat
+        window.addEventListener('load', tampilkanIklanAcak);
+
+        // Inisialisasi Swiper Slider
+        var swiper = new Swiper(".mySwiper", {
+            // 1. PENGATURAN DASAR
+            slidesPerView: 1,      // Tampilkan 1 kartu per layar
+            spaceBetween: 10,     // Jarak antar kartu (pixel)
+            loop: true,           // Iklan berputar terus (kembali ke 1 setelah slide terakhir)
+            grabCursor: true,     // Kursor berubah jadi tangan saat hover (di desktop)
+
+            // 2. OTOMATIS GESER (Autoplay)
+            autoplay: {
+                delay: 5000,                  // Geser tiap 5 detik (5000ms)
+                disableOnInteraction: false,   // JANGAN matikan autoplay jika user swipe manual
+                pauseOnMouseEnter: true,      // Berhenti geser jika kursor mouse di atas iklan
+            },
+
+            // 3. DOT NAVIGASI (Hanya jika Om pakai dot di HTML)
+            pagination: {
+                el: ".swiper-pagination",
+                clickable: true, // Dot bisa diklik untuk lompat ke iklan tertentu
+                dynamicBullets: true, // Dot mengecil/membesar mengikuti jumlah slide
+            },
+
+            // 4. EFEK GESER (Opsional, bawaan adalah slide)
+            effect: "slide", // Bisa diganti "fade" atau "cube"
+            speed: 600,      // Kecepatan animasi pergeseran (ms)
+        });
     </script>
 
 </body>
