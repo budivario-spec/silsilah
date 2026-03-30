@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="#00e5ff">
     <title>Silsilah Keluarga Mbah Muntari</title>
     <script src="config.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <style>
@@ -156,22 +156,23 @@
             margin-top: -35px;
         }
 
-        .swiper-wrapper {
-            /* Menggunakan cubic-bezier agar gerakan 'sedotan' mulainya lembut dan berhenti lembut */
-            transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1) !important;
-        }
-
         .swiper-slide {
-            /* Memaksa GPU HP ikut kerja biar geseran super smooth */
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
+            /* Memaksa GPU bekerja (Hardware Acceleration) */
+            transform: translate3d(0, 0, 0);
+            -webkit-transform: translate3d(0, 0, 0);
+            
+            /* Menghaluskan tepi gambar saat bergerak */
             will-change: transform;
             
-            /* Tambahan: Agar gambar di dalam slide tidak pecah/blur saat animasi */
+            /* Mencegah gambar berkedip di Safari/iOS */
             -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
-            -webkit-perspective: 1000;
-            perspective: 1000;
+        }
+
+        .swiper-wrapper {
+            /* Menghilangkan hambatan geser di layar sentuh */
+            touch-action: pan-y;
+            transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1) !important;
         }
 
         /* Pastikan gambar di dalam slide mengikuti lekukan kartu */
@@ -285,6 +286,7 @@
 
             swiperInstance = new Swiper(".mySwiper", {
                 slidesPerView: 1,
+                centeredSlides: true,
                 spaceBetween: 50,
                 loop: true,
                 speed: 1200,
@@ -294,11 +296,11 @@
                 longSwipes: true,
                 longSwipesRatio: 0.5,
                 longSwipesMs: 300,
-                shortSwipes: false,
+                shortSwipes: true,
                 touchRatio: 0.8,
                 touchReleaseOnEdges: true,
                 resistance: true,
-                resistanceRatio: 0.3,
+                resistanceRatio: 0,
                 autoplay: {
                     delay: 5000,
                     disableOnInteraction: false,
