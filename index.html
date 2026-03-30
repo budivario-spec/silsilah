@@ -3,6 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4RDDKDQNKB"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-4RDDKDQNKB');
+    </script>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#00e5ff">
     <meta name="apple-mobile-web-app-status-bar-style" content="#00e5ff">
@@ -107,27 +116,26 @@
         .relative-card { position: relative; }
 
         /* --- LOGIKA REFLEKSI MEWAH --- */
-        /* 3. Dekatkan Pagination ke kartu karena refleksinya sudah tipis */
         .wadah-refleksi {
             position: relative;
-            padding-bottom: 15px; /* Jarak bawah dipersempit */
+            /* Memberikan jarak bawah agar refleksi punya ruang */
+            padding-bottom: 20px; 
         }
 
         /* Terapkan refleksi pada Swiper Container */
         .mySwiper {
-            /* 1. KUNCI TINGGI REFLEKSI DI SINI */
-            -webkit-box-reflect: below 2px -webkit-gradient(
+            /* Perintah Refleksi (Hanya jalan di Webkit/Blink seperti Chrome/Safari/Edge/HP Android) */
+            -webkit-box-reflect: below 5px -webkit-gradient(
                 linear, 
                 left top, 
                 left bottom, 
                 from(transparent), 
-                /* Di 15% tinggi asli, refleksi mulai hilang */
-                color-stop(15%, rgba(255, 255, 255, 0.1)), 
-                /* Di 25% tinggi asli, refleksi sudah mati total (transparan) */
-                color-stop(25%, transparent), 
-                to(transparent)
+                color-stop(60%, transparent), 
+                color-stop(90%, rgba(255, 255, 255, 0.1)), 
+                to(rgba(255, 255, 255, 0.2))
             );
             
+            /* Proteksi agar refleksi tidak memotong shadow kartu */
             overflow: visible !important;
         }
 
@@ -138,15 +146,14 @@
 
         /* Jarak agar konten di bawah slider tidak tertabrak */
         /* Jaring pengaman Swiper agar Shadow Kartu tidak terpotong */
-        /* 2. Karena refleksi sudah pendek, jaring pengamannya cukup 80px saja */
         .swiper {
-            clip-path: inset(-100px -100px -80px -100px); 
+            clip-path: inset(-100px -100px -100px -100px); /* Bawah diperlebar untuk refleksi */
         }
 
         .swiper-pagination {
             position: relative !important;
-            bottom: -15px !important; /* Angkat sedikit mendekat ke refleksi */
-            margin-top: 5px;
+            bottom: 5px !important; /* Angkat sedikit mendekat ke refleksi */
+            margin-top: -35px;
         }
 
         .swiper-wrapper {
@@ -251,9 +258,8 @@
             </div>
         </div>
 
-        <div class="mt-8 mb-16 px-6"> <div class="flex justify-between items-center mb-4 px-1">
+        <div class="mt-8 mb-16 px-1"> <div class="flex justify-between items-center mb-4 px-1">
                 <h3 class="font-black text-gray-800 text-sm uppercase tracking-wider">Kabar & Promo</h3>
-                <span class="bg-tosca/10 text-toscaDark text-[9px] font-bold px-2 py-0.5 rounded-full">TERBARU</span>
             </div>
 
             <div class="wadah-refleksi">
@@ -279,7 +285,7 @@
 
             swiperInstance = new Swiper(".mySwiper", {
                 slidesPerView: 1,
-                spaceBetween: 10,
+                spaceBetween: 50,
                 loop: true,
                 speed: 1200,
                 followFinger: true,
@@ -480,7 +486,7 @@
                             <p class="text-[10px] text-gray-200 line-clamp-1 font-medium drop-shadow-sm">${item.deskripsi}</p>
                         </div>
 
-                        ${item.link ? '<div class="absolute top-2 right-2 bg-green-500 text-white text-[8px] font-bold px-2 py-1 rounded-lg shadow-lg">PROMO</div>' : ''}
+                        ${item.link ? '<div class="absolute top-2 right-2 bg-green-600 text-gray-100 text-[8px] font-bold px-2 py-1 rounded-lg shadow-lg">Sponsor</div>' : ''}
                     </a>
                 </div>`;
             });
