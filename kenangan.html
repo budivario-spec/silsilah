@@ -7,37 +7,100 @@
     <script src="config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #fafafa; font-family: sans-serif; }
-
-        /* Lengkungan Header Tosca */
+        body { background-color: #fcfcfc; font-family: sans-serif; margin: 0; }
+        
+        /* Header Merah Marun Khidmat */
         .header-curve {
-            background-color: #00e5ff;
-            height: 90px;
-            border-bottom-left-radius: 10% 30px;
-            border-bottom-right-radius: 10% 30px;
-            position: relative;
+            background-color: #7f1d1d; /* Merah Marun */
+            height: 100px;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: white;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: relative;
         }
 
         .btn-back {
             position: absolute;
-            left: 20px;
-            background: none;
-            border: none;
+            left: 15px;
+            top: 35px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            font-size: 24px;
-            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
         }
 
+        /* Kartu Kenangan - Ditambah Flex */
         .card-kenangan {
             background: white;
-            border-left: 4px solid #991b1b; /* Merah gelap */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-radius: 15px;
+            padding: 16px;
+            margin-bottom: 15px;
+            border-left: 5px solid #991b1b;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border-top: 1px solid #f0f0f0;
+            border-right: 1px solid #f0f0f0;
+            border-bottom: 1px solid #f0f0f0;
+
+            /* INI KUNCINYA */
+            display: flex !important;
+            justify-content: space-between; /* Teks kiri, foto kanan */
+            align-items: center; /* Sejajar tengah secara vertikal */
+            gap: 12px;
+        }
+
+        /* Biar teks tidak kepotong kalau nama panjang */
+        .kenangan-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .nama-almarhum {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: #4b5563;
+            margin-top: 5px;
+        }
+
+        .icon-small { font-size: 14px; }
+
+            /* BAGIAN KANAN (FOTO/SILUET) */
+        .kenangan-photo {
+            width: 60px; height: 60px; /* Ukuran foto persegi pas */
+            border-radius: 12px; /* Lekukan manis */
+            object-fit: cover; /* Biar foto tidak gepeng */
+            border: 2px solid #eee; /* Bingkai tipis */
+            flex-shrink: 0; /* Biar foto tidak mengecil di layar sempit */
+        }
+
+        /* SILUET CADANGAN JIKA FOTO KOSONG */
+        .siluet-placeholder {
+            width: 60px; height: 60px;
+            border-radius: 12px;
+            background-color: #f3f4f6; /* Abu-abu muda */
+            color: #d1d5db; /* Abu-abu tua pudar */
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; /* Ukuran ikon masjid gede */
+            border: 2px solid #eee;
         }
     </style>
 </head>
@@ -56,39 +119,76 @@
     <script>
         async function loadKenangan() {
             const container = document.getElementById('listKenangan');
-            // Ambil data dari LocalStorage yang sudah disinkronkan di Index
-            const dataLokal = JSON.parse(localStorage.getItem('dataCloud')) || { keluarga: [] };
-            
-            // Filter hanya yang statusnya Meninggal/Wafat
-            const wafat = dataLokal.keluarga.filter(a => 
-                a.status === "Meninggal" || a.status === "Wafat"
-            );
+            const dataLokalRaw = localStorage.getItem('dataCloud');
+            const dataLokal = dataLokalRaw ? JSON.parse(dataLokalRaw) : { keluarga: [] };
+
+            // 1. FILTER: Cari yang statusnya Wafat atau namanya ada (Alm.)
+            let wafat = dataLokal.keluarga.filter(person => {
+                const nama = (person.nama || "").toLowerCase();
+                const status = (person.status || "").toLowerCase();
+                return status === "meninggal" || status === "wafat" || nama.includes("(alm.)") || nama.includes("(almh.)");
+            });
 
             if (wafat.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 mt-10">Belum ada data tercatat.</p>';
+                container.innerHTML = '<div class="text-center mt-20 text-gray-400 text-sm">Belum ada data keluarga wafat.</div>';
                 return;
             }
 
-            // Urutkan berdasarkan tanggal wafat terbaru jika ada
-            wafat.sort((a, b) => new Date(b.tanggalWafat) - new Date(a.tanggalWafat));
+            // 2. URUTKAN BERDASARKAN NAMA (A ke Z)
+            wafat.sort((a, b) => {
+                const namaA = (a.nama || "").toLowerCase();
+                const namaB = (b.nama || "").toLowerCase();
+                return namaA.localeCompare(namaB);
+            });
 
             let html = '';
             wafat.forEach(person => {
-                // Asumsi di Google Sheets ada kolom: tanggalWafat dan lokasiMakam
-                const tgl = person.tanggalWafat || "Tanggal tidak tercatat";
-                const makam = person.lokasiMakam || "Lokasi tidak tercatat";
+                const namaLengkap = person.nama || "";
+                let namaBersih = namaLengkap;
+                let sebutan = "";
+
+                // Logika Deteksi (Alm.) / (Almh.)
+                if (namaLengkap.includes("(Almh.)")) {
+                    namaBersih = namaLengkap.replace("(Almh.)", "").trim();
+                    sebutan = '<span class="text-pink-700/50 text-[10px] ml-1 font-normal">(Almh.)</span>';
+                } else if (namaLengkap.includes("(Alm.)")) {
+                    namaBersih = namaLengkap.replace("(Alm.)", "").trim();
+                    sebutan = '<span class="text-blue-700/50 text-[10px] ml-1 font-normal">(Alm.)</span>';
+                }
+
+                // --- SOLUSI FOTO (Disesuaikan dengan Apps Script Om) ---
+                // Apps Script Om mengirim data dengan key "foto"
+                const fotoUrl = person.foto; 
+                
+                let mediaHtml = '';
+                // Cek apakah link foto valid (berisi teks base64 atau link http)
+                if (fotoUrl && fotoUrl.length > 20) {
+                    mediaHtml = `<img src="${fotoUrl}" alt="${namaBersih}" class="kenangan-photo" onerror="this.src='https://via.placeholder.com/60?text=No+Img';">`;
+                } else {
+                    // Jika kosong, tampilkan siluet masjid
+                    mediaHtml = `<div class="siluet-placeholder">🕌</div>`;
+                }
+
+                // Ambil data lain dari sheet Om
+                const tgl = person.tanggalWafat || "-";
+                const makam = person.lokasiMakam || "Tidak tercatat";
                 
                 html += `
-                <div class="card-kenangan p-4 rounded-xl">
-                    <h3 class="font-bold text-gray-800">${person.nama}</h3>
-                    <div class="text-xs text-gray-600 mt-2 space-y-1">
-                        <p class="flex items-center gap-2">
-                            <span>📅</span> Wafat: ${tgl}
-                        </p>
-                        <p class="flex items-center gap-2 italic">
-                            <span>📍</span> Dimakamkan: ${makam}
-                        </p>
+                <div class="card-kenangan">
+                    <div class="kenangan-info">
+                        <h3 class="nama-almarhum">${namaBersih} ${sebutan}</h3>
+                        <div class="mt-2 space-y-1">
+                            <div class="info-row">
+                                <span class="icon-small">📅</span> 
+                                <span>Wafat: <b class="text-gray-700">${tgl}</b></span>
+                            </div>
+                            <div class="info-row italic">
+                                <span class="icon-small">📍</span> 
+                                <span>Makam: ${makam}</span>
+                            </div>
+                        </div>
                     </div>
+                    ${mediaHtml}
                 </div>`;
             });
 

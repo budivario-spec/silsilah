@@ -18,13 +18,28 @@
             color: white;
             position: relative;
         }
-        .btn-back {
-            position: absolute; left: 20px; font-size: 24px; color: white;
-        }
+        .btn-back { position: absolute; left: 20px; font-size: 24px; color: white; border:none; background:none; cursor:pointer; }
         .chart-bar {
             transition: width 1s ease-in-out;
             height: 24px;
             border-radius: 12px;
+        }
+        .card-stat {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            border: 1px solid #f3f4f6;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1.5rem;
+            text-align: center;
         }
     </style>
 </head>
@@ -32,110 +47,180 @@
 
     <div class="header-curve shadow-lg">
         <button onclick="window.location.href='index.html'" class="btn-back">←</button>
-        <h1 class="text-xl font-bold">Statistik Generasi</h1>
+        <h1 class="text-xl font-bold">Statistik Keluarga</h1>
     </div>
 
-    <div class="p-6 -mt-8">
-        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-            <h2 class="text-gray-400 text-sm font-semibold uppercase tracking-wider mb-6 text-center">Sebaran Keluarga</h2>
-            
-            <div id="wadahStatistik" class="space-y-8">
-                </div>
+    <div class="p-6 -mt-8 space-y-6">
+        <div class="card-stat">
+            <h2 class="section-title">Berdasarkan Tahun Kelahiran</h2>
+            <div id="wadahStatistik" class="space-y-4"> 
+                <p class="text-center text-gray-400 text-xs">Memuat analisis tahun...</p>
+            </div>
+        </div>
 
-            <div class="mt-10 pt-6 border-t border-gray-50">
-                <p class="text-center text-xs text-gray-400 italic">
-                    *Data dihitung berdasarkan tahun kelahiran yang terdaftar.
-                </p>
+        <div class="card-stat">
+            <h2 class="section-title">Berdasarkan Urutan Kekerabatan</h2>
+            <div id="wadahKekerabatan" class="space-y-4">
+                <p class="text-center text-gray-400 text-xs">Memuat analisis hubungan...</p>
             </div>
         </div>
     </div>
 
-    <script>       
-
+    <script>
         async function muatStatistikCloud() {
-            const wadah = document.getElementById('wadahStatistik');
-            wadah.innerHTML = `
-                <div class="text-center p-10">
-                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#00e5ff] mx-auto"></div>
-                    <p class="text-gray-400 mt-4 text-sm font-medium">Menganalisis Data Keluarga...</p>
-                </div>`;
+            const wadahTahun = document.getElementById('wadahStatistik');
+            const wadahKekerabatan = document.getElementById('wadahKekerabatan');
 
             try {
                 const response = await fetch(URL_API + "?t=" + Date.now());
                 const resJson = await response.json();
+                const daftar = resJson.keluarga || [];
 
-                // --- PERBAIKAN KRUSIAL: Ambil array 'keluarga' ---
-                const daftar = resJson.keluarga || []; 
-
-                // Simpan ke LocalStorage agar sinkron dengan Dashboard
-                localStorage.setItem('dataCloud', JSON.stringify(resJson));
-
-                let stats = {
-                    "Alpha (2013-Sekarang)": { count: 0, color: "bg-blue-400", start: 2013, end: 2026 },
+                // --- DATA TAHUN (Sesuai kode Om) ---
+                let statsTahun = {
+                    "Alpha (2013-Skrg)": { count: 0, color: "bg-blue-400", start: 2013, end: 2026 },
                     "Gen Z (1997-2012)": { count: 0, color: "bg-emerald-400", start: 1997, end: 2012 },
                     "Milenial (1981-1996)": { count: 0, color: "bg-amber-400", start: 1981, end: 1996 },
                     "Gen X (1965-1980)": { count: 0, color: "bg-orange-400", start: 1965, end: 1980 },
                     "Baby Boomers (1946-1964)": { count: 0, color: "bg-rose-400", start: 1946, end: 1964 }
                 };
 
-                let totalDataTerhitung = 0;
+                // --- DATA KEKERABATAN (LOGIKA BARU) ---
+                // Kita hitung level tiap orang berdasarkan parentID
+                const levelMap = {};
+                
+                // Fungsi cari level (rekursif)
+                // Map data agar pencarian ID cepat
+                const personMap = {};
+                daftar.forEach(p => { personMap[p.id] = p; });
 
-                // Loop data keluarga
+                const levelCache = {};
+
+                function getLevel(id) {
+    if (levelCache[id]) return levelCache[id];
+
+    const person = personMap[id];
+    if (!id || !person) return 2;
+
+    const status = (person.status || "").toLowerCase().trim();
+    const pID = (person.parentID || "").toString().trim();
+    const idPasangan = (person.idPasangan || "").toString().trim();
+    const idMuntari = "1774517000662"; // Kunci ID Mbah Muntari
+
+    // --- 1. LOGIKA GENERASI 1 (Mbah & Istri) ---
+    if (status === "none" || id === idMuntari) {
+        levelCache[id] = 1;
+        return 1;
+    }
+    // Asirah: Jika dia pasangan dari Muntari
+    if (status === "pasangan" && pID === idMuntari) {
+        levelCache[id] = 1;
+        return 1;
+    }
+
+    // --- 2. LOGIKA GENERASI 2 (Anak & Menantu) ---
+    // A. Anak Kandung: pID-nya Muntari dan statusnya 'anak'
+    if (status === "anak" && pID === idMuntari) {
+        levelCache[id] = 2;
+        return 2;
+    }
+    
+    // B. Menantu: Dia adalah pasangan dari salah satu Anak (Toyib dkk)
+    if (status === "pasangan" && pID !== "" && pID !== idMuntari) {
+        const pasangan = personMap[pID];
+        if (pasangan && (pasangan.status || "").toLowerCase().trim() === "anak" && pasangan.parentID === idMuntari) {
+            levelCache[id] = 2;
+            return 2;
+        }
+    }
+
+    // --- 3. LOGIKA GENERASI 3+ (Cucu & Cicit) ---
+    // Jika tidak masuk kriteria di atas, hitung berdasarkan silsilah murni
+    if (pID !== "" && pID !== "0") {
+        const lvlParent = getLevel(pID);
+        // Jika dia status pasangan, levelnya sama dengan pasangannya
+        levelCache[id] = (status === "pasangan") ? lvlParent : lvlParent + 1;
+    } else {
+        levelCache[id] = 3; // Pelarian terakhir jika data tidak lengkap
+    }
+
+    return levelCache[id];
+}
+
+                let statsKerabat = {
+                    "Generasi 1 (Mbah)": { count: 0, color: "bg-indigo-500" },
+                    "Generasi 2 (Anak)": { count: 0, color: "bg-purple-500" },
+                    "Generasi 3 (Cucu)": { count: 0, color: "bg-fuchsia-500" },
+                    "Generasi 4 (Cicit)": { count: 0, color: "bg-pink-500" },
+                    "Generasi 5 (Canggah)": { count: 0, color: "bg-rose-500" }
+                };
+
+                let totalTahun = 0;
+                let totalKerabat = daftar.length;
+
                 daftar.forEach(a => {
+                    // Hitung Tahun
                     if (a.tanggalLahir) {
-                        // Pastikan tanggalLahir diubah ke string sebelum di-match
                         const match = String(a.tanggalLahir).match(/\d{4}/);
                         if (match) {
-                            const tahun = parseInt(match[0]);
-                            for (let gen in stats) {
-                                if (tahun >= stats[gen].start && tahun <= stats[gen].end) {
-                                    stats[gen].count++;
-                                    totalDataTerhitung++;
+                            const thn = parseInt(match[0]);
+                            for (let g in statsTahun) {
+                                if (thn >= statsTahun[g].start && thn <= statsTahun[g].end) {
+                                    statsTahun[g].count++;
+                                    totalTahun++;
                                     break;
                                 }
                             }
                         }
                     }
+
+                    // Hitung Kekerabatan
+                    const lvl = getLevel(a.id);
+                    if (lvl === 1) statsKerabat["Generasi 1 (Mbah)"].count++;
+                    else if (lvl === 2) statsKerabat["Generasi 2 (Anak)"].count++;
+                    else if (lvl === 3) statsKerabat["Generasi 3 (Cucu)"].count++;
+                    else if (lvl === 4) statsKerabat["Generasi 4 (Cicit)"].count++;
+                    else statsKerabat["Generasi 5 (Canggah)"].count++;
                 });
 
-                // Tampilkan grafik
-                wadah.innerHTML = '';
-                if (totalDataTerhitung === 0) {
-                    wadah.innerHTML = `<p class="text-center text-gray-400 py-10 italic">Data tanggal lahir belum diisi di Google Sheets.</p>`;
-                    return;
-                }
+                // Tampilkan Tahun
+                wadahTahun.innerHTML = renderBars(statsTahun, totalTahun);
+                // Tampilkan Kekerabatan
+                wadahKekerabatan.innerHTML = renderBars(statsKerabat, totalKerabat);
 
-                for (let gen in stats) {
-                    const item = stats[gen];
-                    const persentase = (item.count / totalDataTerhitung * 100);
-
-                    wadah.innerHTML += `
-                        <div class="mb-4">
-                            <div class="flex justify-between items-end mb-1">
-                                <span class="font-bold text-gray-700 text-xs">${gen}</span>
-                                <span class="text-xs font-black text-gray-400">${item.count} Jiwa</span>
-                            </div>
-                            <div class="w-full bg-gray-100 rounded-full h-5 overflow-hidden">
-                                <div class="chart-bar ${item.color} h-full transition-all duration-1000 flex items-center justify-end pr-2 text-[10px] text-white font-bold" 
-                                    style="width: 0%" 
-                                    data-width="${persentase}%">
-                                    ${item.count > 0 ? Math.round(persentase) + '%' : ''}
-                                </div>
-                            </div>
-                        </div>`;
-                }
-
-                // Jalankan animasi bar
+                // Jalankan Animasi
                 setTimeout(() => {
                     document.querySelectorAll('.chart-bar').forEach(bar => {
                         bar.style.width = bar.getAttribute('data-width');
                     });
                 }, 100);
 
-            } catch (error) {
-                console.error("Gagal statistik:", error);
-                wadah.innerHTML = `<p class="text-center text-red-500 text-xs">Gagal memuat data. Periksa koneksi.</p>`;
+            } catch (e) {
+                console.error(e);
+                wadahTahun.innerHTML = `<p class="text-center text-red-400 text-xs">Gagal memuat data.</p>`;
             }
+        }
+
+        function renderBars(obj, total) {
+            let html = '';
+            for (let key in obj) {
+                const item = obj[key];
+                const persen = total > 0 ? Math.round((item.count / total) * 100) : 0;
+                html += `
+                    <div class="mb-4">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="font-bold text-gray-700 text-[10px]">${key}</span>
+                            <span class="text-[10px] font-black text-gray-400">${item.count} Jiwa</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-5 overflow-hidden">
+                            <div class="chart-bar ${item.color} h-full flex items-center justify-end pr-2 text-[10px] text-white font-bold" 
+                                 style="width: 0%" data-width="${persen}%">
+                                ${item.count > 0 ? persen + '%' : ''}
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            return html;
         }
 
         window.onload = muatStatistikCloud;
