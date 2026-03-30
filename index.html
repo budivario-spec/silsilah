@@ -41,28 +41,37 @@
         /* INI CSS PENGGANTI TAILWIND UNTUK BARIS HIDUP/WAFAT */
         .status-row {
             display: flex !important;
-            flex-direction: row !important; /* PAKSA HORIZONTAL */
+            flex-direction: row !important;
             align-items: center !important;
-            justify-content: center !important;
-            gap: 4px;
+            justify-content: center !important; /* Paksa semua kumpul di tengah */
+            gap: 4px !important; /* Jarak antar 78, pemisah |, dan 29 sama rata */
             margin-top: 4px;
             width: 100%;
-            font-family: sans-serif !important;
-            font-size: 9px !important;
-            font-weight: bold;
-            white-space: nowrap; /* Anti turun baris */
-        }
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 2px;
+            font-size: 10px !important; /* Sedikit diperbesar biar jelas */
+            font-weight: 800 !important;
+            white-space: nowrap;
         }
 
+        /* ITEM STATUS (Angka & Titik) */
+        .status-item {
+            display: flex !important;
+            align-items: center !important;
+            gap: 3px !important; /* Jarak antara titik warna dan angkanya */
+        }
+
+        /* PEMISAH VERTIKAL */
+        .status-divider {
+            color: #d1d5db;
+            margin: 0 1px; /* Jarak super tipis agar simetris */
+            opacity: 0.6;
+        }
+
+        /* TITIK WARNA */
         .dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            display: inline-block;
+            flex-shrink: 0; /* Biar titik tidak gepeng kalau ruang sempit */
         }
         
         /* Lengkungan Header Tosca */
@@ -160,13 +169,15 @@
                 
                 <div class="status-row">
                     <div class="status-item">
-                        <span class="dot bg-green-600"></span>
-                        <span id="jumlahHidup" style="color: #1d9e4c;">0</span>
+                        <span class="dot" style="background-color: #16a34a;"></span>
+                        <span id="jumlahHidup" style="color: #15803d;">0</span>
                     </div>
-                    <div style="color: #d1d5db; margin: 0 2px;">|</div>
+                    
+                    <span class="status-divider">|</span>
+                    
                     <div class="status-item">
-                        <span class="dot bg-red-600"></span>
-                        <span id="jumlahWafat" style="color: #ff0000;">0</span>
+                        <span class="dot" style="background-color: #dc2626;"></span>
+                        <span id="jumlahWafat" style="color: #991b1b;">0</span>
                     </div>
                 </div>
             </div>
