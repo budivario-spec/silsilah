@@ -72,10 +72,21 @@
         </div>
 
     <script>
-        // 1. Fungsi Utama: Muat data dari memori (dan Cloud jika ada)
+    // 1. Fungsi Pembantu: Mengambil array keluarga dari objek dataCloud
+        function getDaftarDariStorage() {
+            const dataRaw = localStorage.getItem('dataCloud');
+            if (dataRaw) {
+                const parsed = JSON.parse(dataRaw);
+                // Ambil properti .keluarga karena dataCloud isinya {keluarga: [], iklan: []}
+                return parsed.keluarga || []; 
+            }
+            return [];
+        }
+
+        // 2. Fungsi Utama: Muat data dan tampilkan
         function muatDaftarAnggota() {
             const wadahDaftar = document.getElementById('wadahDaftar');
-            const daftarKeluarga = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            const daftarKeluarga = getDaftarDariStorage();
 
             console.log("Memuat " + daftarKeluarga.length + " anggota keluarga.");
 
@@ -83,7 +94,7 @@
                 wadahDaftar.innerHTML = `
                     <div class="text-center mt-12 px-6">
                         <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200">
-                            <p class="text-gray-500 italic">Belum ada anggota keluarga yang terdaftar.</p>
+                            <p class="text-gray-500 italic">Belum ada anggota keluarga yang terdaftar atau data sedang dimuat...</p>
                             <button onclick="window.location.href='tambah-anggota.html'" class="text-[#00e5ff] font-bold mt-3 underline">
                                 + Tambah Anggota Pertama
                             </button>
@@ -95,20 +106,20 @@
             renderData(daftarKeluarga);
         }
 
-        // 2. Fungsi Render: Mengubah data menjadi kartu visual
+        // 3. Fungsi Render: Mengubah data menjadi kartu visual
         function renderData(data) {
             const wadahDaftar = document.getElementById('wadahDaftar');
             wadahDaftar.innerHTML = ''; 
 
-            data.forEach(anggota => {
-                // LOGIKA PENGAMAN: Jika foto benar-benar kosong/null (data lama)
-                // Berikan SVG secara langsung di sini sebagai cadangan terakhir
+            // Urutkan berdasarkan nama A-Z agar rapi saat dicari
+            const dataTerurut = [...data].sort((a, b) => a.nama.localeCompare(b.nama));
+
+            dataTerurut.forEach(anggota => {
+                // Logika Foto Cadangan
                 let sumberFoto = anggota.foto;
-                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "undefined" || sumberFoto === "") {
+                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "" || sumberFoto.includes('127.0.0.1')) {
                     sumberFoto = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><rect width='24' height='24' fill='%2300e5ff'/><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>`;
                 }
-
-                let elemenFoto = `<img src="${sumberFoto}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm mr-4" style="border-color: #00e5ff;">`;
 
                 let infoLahir = (anggota.tempatLahir || anggota.tanggalLahir) 
                     ? `${anggota.tempatLahir || '?'}, ${anggota.tanggalLahir || '?'}`
@@ -118,7 +129,7 @@
                     <div class="member-card shadow-sm cursor-pointer hover:bg-gray-50 flex items-center p-4 bg-white mb-3 rounded-2xl border border-gray-100" 
                         onclick="window.location.href='tambah-anggota.html?id=${anggota.id}'">
                         
-                        ${elemenFoto}
+                        <img src="${sumberFoto}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm mr-4" style="border-color: #00e5ff;">
                         
                         <div class="flex-1">
                             <h4 class="font-bold text-gray-800 text-lg leading-tight">${anggota.nama}</h4>
@@ -132,10 +143,10 @@
             });
         }
 
-        // 3. Fitur Cari: Filter otomatis saat mengetik
+        // 4. Fitur Cari: Filter otomatis saat mengetik
         function filterAnggota() {
             const input = document.getElementById('searchInput').value.toLowerCase();
-            const daftarKeluarga = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            const daftarKeluarga = getDaftarDariStorage();
             
             const hasilFilter = daftarKeluarga.filter(anggota => 
                 anggota.nama.toLowerCase().includes(input) || 
@@ -145,7 +156,7 @@
             renderData(hasilFilter);
         }
 
-        // Jalankan otomatis
+        // Jalankan otomatis saat halaman dibuka
         window.onload = muatDaftarAnggota;
     </script>
 </body>

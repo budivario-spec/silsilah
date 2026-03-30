@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Statistik Generasi - Mbah Muntari</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="config.js"></script>
     <style>
         .header-curve {
             background: linear-gradient(135deg, #00e5ff 0%, #00acc1 100%);
@@ -49,9 +50,7 @@
         </div>
     </div>
 
-    <script>
-        // Ganti dengan URL Google Apps Script Om Budi yang sudah dideploy
-        const URL_API = "https://script.google.com/macros/s/AKfycbzq6nkc-geK0-64ZLm-KjcZ1XMoUUo-OGs5KleaYhD0zYELJswpz35omHiTFjC5nPcIdA/exec"; 
+    <script>       
 
         async function muatStatistikCloud() {
             const wadah = document.getElementById('wadahStatistik');

@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#00e5ff">
     <meta name="apple-mobile-web-app-status-bar-style" content="#00e5ff">
     <title>Silsilah Keluarga Mbah Muntari</title>
+    <script src="config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -44,6 +45,23 @@
             cursor: pointer; /* Agar muncul kursor tangan saat di desktop */
             -webkit-tap-highlight-color: transparent; /* Menghilangkan kotak biru saat di-tap di HP */
         }
+
+        /* Gaya untuk angka notifikasi merah di pojok kartu */
+        .badge-notif {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: #ff3d00;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .relative-card { position: relative; }
 
         /* Warna titik navigasi saat aktif */
         .swiper-pagination-bullet-active {
@@ -102,10 +120,22 @@
         </div>
 
         <div class="grid grid-cols-3 gap-3">
-            <div class="menu-card">
+            <div class="menu-card" onclick="window.location.href='kenangan.html'">
                 <span class="menu-icon">👥</span>
                 <span class="menu-label">Jumlah Anggota</span>
                 <span class="menu-value" id="angkaJumlah">0</span>
+
+                <div class="flex items-center gap-2 mt-1 text-[10px] font-bold">
+                <div class="flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-green-800"></span>
+                    <span id="jumlahHidup" class="text-green-900">0</span>
+                </div>
+                <div class="text-gray-300">|</div>
+                <div class="flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-red-800"></span>
+                    <span id="jumlahWafat" class="text-red-900">0</span>
+                </div>
+            </div>
             </div>
             <div class="menu-card" onclick="window.location.href='statistik.html'">
                 <span class="menu-icon">🌿</span>
@@ -131,11 +161,11 @@
                 <span class="menu-label">Cari Anggota</span>
             </div>
 
-            <div class="menu-card">
-                <span class="menu-icon">🔄</span>
-                <span class="menu-label">Kirim / Simpan Data</span>
+            <div class="menu-card" onclick="window.location.href='kirim-kabar.html'">
+                <span class="menu-icon">📣</span>
+                <span class="menu-label">Kirim Kabar & Promo</span>
             </div>
-            <div class="menu-card" onclick="window.location.href='pohon-silsilah.html'">
+            <div id="menu-silsilah" class="menu-card relative-card bg-white p-4 rounded-2xl shadow-md" onclick="tandaiSudahDilihat('keluarga'); window.location.href='pohon-silsilah.html'">
                 <span class="menu-icon">🌳</span>
                 <span class="menu-label">Lihat Silsilah</span>
             </div>
@@ -147,110 +177,209 @@
 
         <div class="mt-8 mb-10">
             <h3 class="font-bold text-gray-800 mb-4 px-1">Kabar Terbaru & Promo</h3>
-            
             <div class="swiper mySwiper w-full h-auto rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                <div class="swiper-wrapper">
-                    
-                    <div class="swiper-slide bg-gray-50">
-                        <a href="https://wa.me/+6285314100080" target="_blank" class="block w-full h-full active:scale-95 transition-transform duration-150">
-                            <img src="iklan/kopi-klepon.jpeg" 
-                                alt="Promo Kopi Klepon" 
-                                class="w-full h-48 object-cover aspect-[2/1]">
-                            <div class="p-4">
-                                <h4 class="font-bold text-gray-800 text-sm">Secangkir kesederhanaan, sebotol kebahagiaan</h4>
-                                <p class="text-xs text-gray-500 mt-1">Klik untuk pesan via WhatsApp.</p>
-                            </div>
-                        </a>
+                <div id="containerIklanCloud" class="swiper-wrapper">
+                    <div class="swiper-slide bg-gray-100 p-10 text-center text-xs text-gray-400">
+                        Memuat kabar terbaru...
                     </div>
-
-                    <div class="swiper-slide bg-gray-50">
-                        <a href="https://wa.me/+6281392470407" target="_blank" class="block w-full h-full" class="block w-full h-full active:scale-95 transition-transform duration-150">
-                            <img src="iklan/sastro-kuas.jpg" 
-                                alt="Jasa Lukis Dinding dan Kanvas" 
-                                class="w-full h-48 object-cover aspect-[2/1]">
-                            <div class="p-4">
-                                <h4 class="font-bold text-gray-800 text-sm">Jasa Lukis Dinding dan Kanvas</h4>
-                                <p class="text-xs text-gray-500 mt-1">Klik untuk pesan via WhatsApp.</p>
-                            </div>
-                        </a>
-                    </div>
-
-                    <div class="swiper-slide bg-gray-50">
-                        <a href="https://wa.me/+6281244397735" target="_blank" class="block w-full h-full" class="block w-full h-full active:scale-95 transition-transform duration-150">
-                            <img src="iklan/ruang-iklan.jpg" 
-                                alt="Space Iklan" 
-                                class="w-full h-48 object-cover aspect-[2/1]">
-                            <div class="p-4">
-                                <h4 class="font-bold text-gray-800 text-sm">Pasang Iklan di Sini</h4>
-                                <p class="text-xs text-gray-500 mt-1">Klik untuk pesan via WhatsApp.</p>
-                            </div>
-                        </a>
-                    </div>
-
-                    <div class="swiper-slide bg-gray-50">                        
-                        <img src="galeri/lebaran-2026.jpeg" 
-                            alt="Keluarga Mbah Kasdar ke keluarga Mbah Toyib" 
-                            class="w-full h-48 object-cover aspect-[2/1]">
-                        <div class="p-4">
-                            <h4 class="font-bold text-gray-800 text-sm">Lebaran 2026</h4>
-                            <p class="text-xs text-gray-500 mt-1">Silaturahmi keluarga Ibu Sudarsiyah Binti Kasdar ke keluarga Pak Suwandi Bin Toyib </p>
-                        </div>
-                    </div>
-
-                    <div class="swiper-slide bg-gray-50">                        
-                        <img src="galeri/bu-sasih.jpeg" 
-                            alt="Keluarga Mbah Toyib ke keluarga Mbah Rameli" 
-                            class="w-full h-48 object-cover aspect-[2/1]">
-                        <div class="p-4">
-                            <h4 class="font-bold text-gray-800 text-sm">Lebaran 2026</h4>
-                            <p class="text-xs text-gray-500 mt-1">Silaturahmi Mas Budi dan Mbak Anif ke keluarga Bu Sasih di Perumnas Grabag </p>
-                        </div>
-                    </div>
-
                 </div>
-
                 <div class="swiper-pagination"></div>
             </div>
         </div>
     </div>
     
     <script>
-        const URL_API = "https://script.google.com/macros/s/AKfycbzq6nkc-geK0-64ZLm-KjcZ1XMoUUo-OGs5KleaYhD0zYELJswpz35omHiTFjC5nPcIdA/exec"; 
+        
+        // MODIFIKASI DISINI: Variabel untuk menyimpan instance swiper
+        let swiperInstance;
 
-        async function perbaruiDashboard() {
-            const elJumlah = document.getElementById('angkaJumlah');
-            const elGen = document.getElementById('angkaTotalGenerasi');
+        // MODIFIKASI DISINI: Fungsi inisialisasi tunggal dengan spek 'smooth' yang Om mau
+        function inisialisasiSwiper() {
+            // Hancurkan swiper lama jika sudah ada (biar tidak tumpuk/lag)
+            if (swiperInstance) swiperInstance.destroy(true, true);
 
-            // --- TAHAP 1: AMBIL DARI LOCALSTORAGE (INSTAN) ---
-            const daftarLokal = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            swiperInstance = new Swiper(".mySwiper", {
+                slidesPerView: 1,
+                spaceBetween: 10,
+                loop: true,
+                speed: 1200,
+                followFinger: true,
+                threshold: 10,
+                touchMoveStopPropagation: true,
+                longSwipes: true,
+                longSwipesRatio: 0.5,
+                longSwipesMs: 300,
+                shortSwipes: false,
+                touchRatio: 0.8,
+                touchReleaseOnEdges: true,
+                resistance: true,
+                resistanceRatio: 0.3,
+                autoplay: {
+                    delay: 5000,
+                    disableOnInteraction: false,
+                },
+                pagination: {
+                    el: ".swiper-pagination",
+                    clickable: true,
+                },
+            });
+        }
+
+        async function cekNotifikasiBaru(dataTerbaru) {
+            // 1. Ambil jumlah data lama yang tersimpan di HP
+            const jumlahLama = JSON.parse(localStorage.getItem('last_count')) || { keluarga: 0, iklan: 0 };
             
-            if (daftarLokal.length > 0) {
-                if (elJumlah) elJumlah.innerText = daftarLokal.length;
-                updateAngkaGenerasi(daftarLokal, elGen);
-            }
+            // 2. Hitung jumlah data baru dari Cloud
+            const jumlahKeluargaBaru = dataTerbaru.keluarga.length - jumlahLama.keluarga;
+            const jumlahIklanBaru = dataTerbaru.iklan.length - jumlahLama.iklan;
 
-            // --- TAHAP 2: UPDATE DARI CLOUD (DI BALIK LAYAR) ---
-            try {
-                const response = await fetch(URL_API);
-                const daftarCloud = await response.json();
-                
-                localStorage.setItem('daftarKeluarga', JSON.stringify(daftarCloud));
-                
-                if (elJumlah) elJumlah.innerText = daftarCloud.length;
-                updateAngkaGenerasi(daftarCloud, elGen);
-
-            } catch (err) {
-                console.log("Gagal sinkronisasi cloud, menggunakan data lokal.", err);
+            // 3. Jika ada penambahan, tampilkan Badge atau Pesan
+            if (jumlahKeluargaBaru > 0 || jumlahIklanBaru > 0) {
+                tampilkanBadge(jumlahKeluargaBaru, jumlahIklanBaru);
+                tampilkanPesanSelamatDatang(jumlahKeluargaBaru, jumlahIklanBaru);
             }
         }
 
-        function updateAngkaGenerasi(data, elemen) {
-            if (!elemen) return;
+        function tampilkanBadge(kel, ikl) {
+            if (kel > 0) {
+                const menuSilsilah = document.getElementById('menu-silsilah'); // Pastikan ID ini ada di HTML kartu
+                menuSilsilah.innerHTML += `<span class="badge-notif">${kel}</span>`;
+            }
+            if (ikl > 0) {
+                const menuKabar = document.getElementById('menu-kabar'); // Pastikan ID ini ada di HTML kartu
+                menuKabar.innerHTML += `<span class="badge-notif">${ikl}</span>`;
+            }
+        }
+
+        function tampilkanPesanSelamatDatang(kel, ikl) {
+            // Membuat pesan pop-up sederhana di bawah layar
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-full text-sm z-50 shadow-2xl border border-[#00e5ff]";
             
+            let pesan = "Halo Om! ";
+            if (kel > 0) pesan += `${kel} Anggota Baru ditambahkan. `;
+            if (ikl > 0) pesan += `${ikl} Kabar/Iklan Baru.`;
+            
+            toast.innerText = pesan;
+            document.body.appendChild(toast);
+
+            // Hilang otomatis setelah 5 detik
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        // Panggil ini SETELAH user mengklik menu atau melihat data agar notif hilang
+        function tandaiSudahDilihat(dataTerbaru) {
+            const counts = {
+                keluarga: dataTerbaru.keluarga.length,
+                iklan: dataTerbaru.iklan.length
+            };
+            localStorage.setItem('last_count', JSON.stringify(counts));
+        }
+
+       async function perbaruiDashboard() {
+            const elJumlah = document.getElementById('angkaJumlah');
+            const elGen = document.getElementById('angkaTotalGenerasi');
+            const containerIklan = document.getElementById('containerIklanCloud');
+            
+            // Ambil elemen untuk angka hidup & wafat
+            const elHidup = document.getElementById('jumlahHidup'); // <-- TAMBAHKAN INI
+            const elWafat = document.getElementById('jumlahWafat'); // <-- TAMBAHKAN INI
+
+            const hitungStatus = (data) => {
+                let hidup = 0;
+                let wafat = 0;
+                data.forEach(a => {
+                    const nama = (a.nama || "").toLowerCase();
+                    const isAlm = nama.includes("(alm.)") || nama.includes("(almh.)");
+                    const statusMeninggal = a.status === "Meninggal" || a.status === "Wafat";
+                    if (isAlm || statusMeninggal) { wafat++; } else { hidup++; }
+                });
+                return { total: data.length, hidup, wafat };
+            };
+
+            // 1. Tampilkan dari Cache Lokal (Agar Langsung Muncul)
+            const dataLokal = JSON.parse(localStorage.getItem('dataCloud')) || { keluarga: [], iklan: [] };
+            if (dataLokal.keluarga.length > 0) {
+                const statsLokal = hitungStatus(dataLokal.keluarga); // <-- TAMBAHKAN INI
+                elJumlah.innerText = statsLokal.total;
+                if (elHidup) elHidup.innerText = statsLokal.hidup;   // <-- TAMBAHKAN INI
+                if (elWafat) elWafat.innerText = statsLokal.wafat;   // <-- TAMBAHKAN INI
+                
+                updateAngkaGenerasi(dataLokal.keluarga, elGen);
+                renderIklan(dataLokal.iklan, containerIklan);
+            }
+
+            try {
+                const response = await fetch(URL_API);
+                const resJson = await response.json();
+                
+                cekNotifikasiBaru(resJson); 
+                localStorage.setItem('dataCloud', JSON.stringify(resJson));
+                
+                // 2. Update dengan data terbaru dari Cloud
+                const statsCloud = hitungStatus(resJson.keluarga); // <-- TAMBAHKAN INI
+                elJumlah.innerText = statsCloud.total;
+                if (elHidup) elHidup.innerText = statsCloud.hidup; // <-- TAMBAHKAN INI
+                if (elWafat) elWafat.innerText = statsCloud.wafat; // <-- TAMBAHKAN INI
+
+                updateAngkaGenerasi(resJson.keluarga, elGen);
+                renderIklan(resJson.iklan, containerIklan);
+            } catch (err) {
+                console.error("Gagal sinkronisasi cloud:", err);
+            }
+        }
+
+        // Modifikasi fungsi tandaiSudahDilihat agar lebih cerdas
+        function tandaiSudahDilihat(tipe) {
+            const dataCloud = JSON.parse(localStorage.getItem('dataCloud'));
+            let lastCount = JSON.parse(localStorage.getItem('last_count')) || { keluarga: 0, iklan: 0 };
+            
+            if (dataCloud) {
+                if (tipe === 'keluarga') lastCount.keluarga = dataCloud.keluarga.length;
+                if (tipe === 'iklan') lastCount.iklan = dataCloud.iklan.length;
+                localStorage.setItem('last_count', JSON.stringify(lastCount));
+            }
+        }
+
+        function renderIklan(daftar, container) {
+            const iklanAktif = daftar.filter(item => item.status === "Aktif");
+            
+            if (!iklanAktif || iklanAktif.length === 0) {
+                container.innerHTML = '<div class="swiper-slide p-10 text-center text-gray-400 text-xs">Belum ada kabar terbaru yang aktif.</div>';
+                return;
+            }
+
+            let html = '';
+            iklanAktif.forEach(item => {
+                const bukaTag = item.link ? `<a href="${item.link}" target="_blank" class="block w-full h-full">` : `<div class="block w-full h-full">`;
+                const tutupTag = item.link ? `</a>` : `</div>`;
+                const pesanWA = item.link ? `<p class="text-[10px] text-cyan-500 font-bold mt-1">Klik untuk hubungi via WA →</p>` : "";
+
+                html += `
+                <div class="swiper-slide bg-white">
+                    ${bukaTag}
+                        <img src="${item.gambar}" alt="${item.judul}" class="w-full h-48 object-cover aspect-[2/1]">
+                        <div class="p-4">
+                            <h4 class="font-bold text-gray-800 text-sm">${item.judul}</h4>
+                            <p class="text-xs text-gray-500 mt-1 line-clamp-2">${item.deskripsi}</p>
+                            ${pesanWA}
+                        </div>
+                    ${tutupTag}
+                </div>`;
+            });
+            
+            container.innerHTML = html;
+            
+            // PENTING: Panggil fungsi rakit ulang Swiper
+            inisialisasiSwiper();
+        }
+
+        function updateAngkaGenerasi(data, elemen) {
+            if (!elemen || !data) return;
             let setGenerasi = new Set();
             data.forEach(a => {
                 if (a.tanggalLahir) {
-                    const match = a.tanggalLahir.match(/\d{4}/);
+                    const match = a.tanggalLahir.toString().match(/\d{4}/);
                     if (match) {
                         const tahun = parseInt(match[0]);
                         if (tahun >= 2013) setGenerasi.add("Alpha");
@@ -264,67 +393,16 @@
             elemen.innerText = setGenerasi.size;
         }
 
-        window.onload = perbaruiDashboard;
+        // Eksekusi utama
+        document.addEventListener('DOMContentLoaded', perbaruiDashboard);
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker aktif!', reg))
+                    .then(reg => console.log('Service Worker aktif!'))
                     .catch(err => console.log('SW Gagal:', err));
             });
         }
-
-        function tampilkanIklanAcak() {
-            const banner = document.getElementById('imgIklan');
-            const link = document.getElementById('linkIklan');
-            
-            if (daftarPromo.length > 0) {
-                // Ambil acak dari daftar
-                const acak = daftarPromo[Math.floor(Math.random() * daftarPromo.length)];
-                
-                banner.src = acak.gambar;
-                link.href = acak.link;
-                banner.alt = acak.alt;
-            }
-        }
-
-        // Jalankan saat halaman dimuat
-        window.addEventListener('load', tampilkanIklanAcak);
-
-        var swiper = new Swiper(".mySwiper", {
-            slidesPerView: 1,
-            spaceBetween: 10,
-            loop: true,
-            speed: 1200, // Diperlambat sedikit dari 1000 ke 1200 agar 'sedotan' otomatisnya lebih smooth
-
-            followFinger: true,
-            threshold: 10, // Naikkan dikit biar tidak terlalu sensitif sama getaran jari
-            touchMoveStopPropagation: true,
-
-            // KUNCI PERBAIKAN:
-            longSwipes: true,
-            longSwipesRatio: 0.5, // UBAH KE 0.5. Kartu baru mau pindah kalau sudah lewat tengah.
-                                // Ini menghilangkan efek 'tersedot' saat baru geser sedikit.
-            longSwipesMs: 300,    // Naikkan ke 300ms agar transisi lebih natural
-
-            shortSwipes: false, // Tetap false agar tidak kaget
-            
-            // Tambahkan ini agar geseran jari terasa punya bobot
-            touchRatio: 0.8, 
-
-            touchReleaseOnEdges: true, 
-            resistance: true,
-            resistanceRatio: 0.3,
-            
-            autoplay: {
-                delay: 5000,
-                disableOnInteraction: false,
-            },
-            pagination: {
-                el: ".swiper-pagination",
-                clickable: true,
-            },
-        });
     </script>
 
 </body>

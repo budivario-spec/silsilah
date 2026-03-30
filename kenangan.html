@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mengenang Keluarga - Silsilah Mbah Muntari</title>
+    <script src="config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #fafafa; font-family: sans-serif; }
+        .card-kenangan {
+            background: white;
+            border-left: 4px solid #991b1b; /* Merah gelap */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="pb-10">
+    <div class="bg-red-900 text-white p-6 rounded-b-3xl shadow-lg mb-6">
+        <button onclick="window.location.href='index.html'" class="mb-2 text-sm opacity-80">← Kembali</button>
+        <h1 class="text-xl font-bold">Mengenang Keluarga</h1>
+        <p class="text-xs opacity-70">Daftar anggota keluarga yang telah mendahului kita.</p>
+    </div>
+
+    <div id="listKenangan" class="px-6 space-y-4">
+        <p class="text-center text-gray-400 text-sm mt-10">Memuat data...</p>
+    </div>
+
+    <script>
+        async function loadKenangan() {
+            const container = document.getElementById('listKenangan');
+            // Ambil data dari LocalStorage yang sudah disinkronkan di Index
+            const dataLokal = JSON.parse(localStorage.getItem('dataCloud')) || { keluarga: [] };
+            
+            // Filter hanya yang statusnya Meninggal/Wafat
+            const wafat = dataLokal.keluarga.filter(a => 
+                a.status === "Meninggal" || a.status === "Wafat"
+            );
+
+            if (wafat.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 mt-10">Belum ada data tercatat.</p>';
+                return;
+            }
+
+            // Urutkan berdasarkan tanggal wafat terbaru jika ada
+            wafat.sort((a, b) => new Date(b.tanggalWafat) - new Date(a.tanggalWafat));
+
+            let html = '';
+            wafat.forEach(person => {
+                // Asumsi di Google Sheets ada kolom: tanggalWafat dan lokasiMakam
+                const tgl = person.tanggalWafat || "Tanggal tidak tercatat";
+                const makam = person.lokasiMakam || "Lokasi tidak tercatat";
+                
+                html += `
+                <div class="card-kenangan p-4 rounded-xl">
+                    <h3 class="font-bold text-gray-800">${person.nama}</h3>
+                    <div class="text-xs text-gray-600 mt-2 space-y-1">
+                        <p class="flex items-center gap-2">
+                            <span>📅</span> Wafat: ${tgl}
+                        </p>
+                        <p class="flex items-center gap-2 italic">
+                            <span>📍</span> Dimakamkan: ${makam}
+                        </p>
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        window.onload = loadKenangan;
+    </script>
+</body>
+</html>

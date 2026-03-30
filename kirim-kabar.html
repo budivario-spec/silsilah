@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kirim Kabar Keluarga</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="config.js"></script>
+    <style>
+        body { background-color: #f0fdfa; font-family: sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="pb-10">
+
+    <div class="bg-[#00e5ff] p-6 rounded-b-[40px] shadow-lg mb-6">
+        <div class="flex items-center gap-4 text-white">
+            <button onclick="window.location.href='index.html'" class="text-2xl">←</button>
+            <h1 class="text-xl font-bold">Kirim Kabar / Promo</h1>
+        </div>
+    </div>
+
+    <div class="px-6">
+        <div class="glass-card p-6 shadow-xl">
+            <p class="text-sm text-gray-600 mb-6 text-center italic">
+                Punya jualan atau kabar penting? Isi form di bawah ya, nanti admin akan tayangkan di halaman depan.
+            </p>
+
+            <form id="formKabar" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">JUDUL KABAR / PROMO</label>
+                    <input type="text" id="judul" required placeholder="Contoh: Kopi Klepon, Kondangan"
+                        class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#00e5ff] outline-none transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">DESKRIPSI SINGKAT</label>
+                    <textarea id="deskripsi" rows="3" required placeholder="Jelaskan sedikit tentang kabar ini..."
+                        class="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#00e5ff] outline-none transition-all"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">FOTO KABAR / PROMO</label>
+                    <div class="relative">
+                        <input type="file" id="fileFoto" accept="image/*" required
+                            class="w-full p-3 rounded-xl border border-gray-200 bg-white text-sm outline-none">
+                    </div>
+                    <div id="previewContainer" class="hidden mt-3">
+                        <img id="imgPreview" src="#" class="w-full h-40 object-cover rounded-xl shadow-md border-2 border-[#00e5ff]">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">NOMOR WHATSAPP (OPSIONAL)</label>
+                    <div class="flex items-center bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <span class="bg-gray-100 px-3 py-3 text-gray-500 text-sm font-bold">+62</span>
+                        <input type="number" id="whatsapp" placeholder="812345678"
+                            class="w-full p-3 outline-none text-sm">
+                    </div>
+                    <p class="text-[10px] text-gray-400 mt-1 ml-1">*Kosongkan jika bukan info jualan</p>
+                </div>
+
+                <button type="submit" id="btnKirim"
+                    class="w-full bg-[#00e5ff] text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform mt-4 flex justify-center items-center gap-2">
+                    <span id="btnText">Kirim Sekarang</span>
+                    <span id="loader" class="hidden animate-spin text-xl">🌀</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        
+        // Variabel untuk menampung hasil Base64 yang sudah di-resize
+        let base64SiapKirim = "";
+
+        // 1. FUNGSI RESIZE OTOMATIS (Sama seperti logika Avatar)
+        document.getElementById('fileFoto').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        
+                        // TARGET: Lebar 800px agar tetap tajam tapi Base64 pendek
+                        const TARGET_WIDTH = 800; 
+                        const scaleFactor = TARGET_WIDTH / img.width;
+                        const targetHeight = img.height * scaleFactor;
+
+                        canvas.width = TARGET_WIDTH;
+                        canvas.height = targetHeight;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, TARGET_WIDTH, targetHeight);
+
+                        // Kompresi JPEG 0.5 (Kualitas 50%) agar < 50.000 karakter
+                        base64SiapKirim = canvas.toDataURL('image/jpeg', 0.5);
+                        
+                        // Tampilkan Preview
+                        document.getElementById('previewContainer').classList.remove('hidden');
+                        document.getElementById('imgPreview').setAttribute('src', base64SiapKirim);
+                        console.log("Foto Berhasil di-resize!");
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 2. FUNGSI KIRIM DATA
+        document.getElementById('formKabar').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btnKirim');
+            const btnText = document.getElementById('btnText');
+            const loader = document.getElementById('loader');
+            const waInput = document.getElementById('whatsapp').value;
+            
+            if (!base64SiapKirim) {
+                alert("Tunggu sebentar, foto sedang diproses...");
+                return;
+            }
+
+            // Mulai Loading
+            btn.disabled = true;
+            btn.classList.add('opacity-70');
+            loader.classList.remove('hidden');
+            btnText.innerText = "Menyimpan ke Cloud...";
+
+            try {
+                const linkWA = waInput ? "https://wa.me/62" + waInput : "";
+
+                // Payload langsung mengirim Base64 (Tanpa ImgBB)
+                const payload = {
+                    action: "SIMPAN_IKLAN",
+                    judul: document.getElementById('judul').value,
+                    deskripsi: document.getElementById('deskripsi').value,
+                    gambar: base64SiapKirim, // Ini teks Base64 yang sudah ringan
+                    link: linkWA
+                };
+
+                const responseCloud = await fetch(URL_API, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                const text = await responseCloud.text();
+                alert("Sip, kabar sudah terkirim.");
+                window.location.href = 'index.html';
+
+            } catch (err) {
+                alert("Waduh, koneksi bermasalah. Coba lagi ya.");
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70');
+                loader.classList.add('hidden');
+                btnText.innerText = "Kirim Sekarang";
+            }
+        });
+    </script>
+</body>
+</html>

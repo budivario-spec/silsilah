@@ -229,22 +229,26 @@
         </button>
     </div>
 
-    <script src="config.js"></script> <script>
+    <script src="config.js"></script> 
+    <script>
         const fileInput = document.getElementById('fileInput');
-        const previewImage = document.getElementById('profilePreview'); // Gunakan ini secara konsisten
+        const previewImage = document.getElementById('profilePreview');
         const defaultIcon = document.getElementById('defaultIcon');
         const statusSelect = document.getElementById('statusKekerabatan');
         const groupRelasi = document.getElementById('groupRelasi');
-        const parentSelect = document.getElementById('parentID');
+        const groupPasangan = document.getElementById('groupPasangan');
         
         const urlParams = new URLSearchParams(window.location.search);
         const idAnggotaEdit = urlParams.get('id');
 
-        window.onload = function() {
-            // 1. ISI DATALIST SAAT HALAMAN DIBUKA
-            updateDatalistNama(); 
+        // 1. Fungsi Pembantu: Ambil data dari key 'dataCloud'
+        function ambilDataLokal() {
+            const data = localStorage.getItem('dataCloud');
+            return data ? JSON.parse(data) : { keluarga: [], iklan: [] };
+        }
 
-            muatOpsiKeluarga(); // Tetap jalankan jika Om masih pakai select lama di tempat lain
+        window.onload = function() {
+            updateDatalistNama(); 
 
             if (idAnggotaEdit) {
                 document.getElementById('judulHalaman').innerText = "Edit Anggota";
@@ -254,31 +258,72 @@
             }
         };
 
-        // Logika Tampil/Sembunyi hanya untuk 'Terhubung Dengan' (Orang Tua)
+        // Logika Tampil/Sembunyi Input Relasi
         statusSelect.addEventListener('change', function() {
             const status = this.value;
-            const groupRelasi = document.getElementById('groupRelasi');
-
-            // groupRelasi (Anak Dari) hanya muncul jika statusnya 'anak'
-            if (status === 'anak') {
-                groupRelasi.classList.remove('hidden');
-            } else {
-                groupRelasi.classList.add('hidden');
-                document.getElementById('inputCariParent').value = ""; // Reset jika bukan anak
-                document.getElementById('parentID').value = "";
-            }
-            // groupPasangan TIDAK di-toggle hidden agar tetap muncul terus
+            groupRelasi.classList.toggle('hidden', status !== 'anak');
+            // Pasangan biasanya selalu ditampilkan atau opsional
         });
 
-        // Fungsi sinkronisasi Nama ke ID (Pastikan ini ada agar ID tertangkap)
-        function sinkronkanInputKeID(idInputText, idInputHidden) {
+        function muatDataUntukEdit(id) {
+            const dataFull = ambilDataLokal();
+            const data = dataFull.keluarga.find(a => a.id == id);
+
+            if (data) {
+                document.getElementById('namaLengkap').value = data.nama || "";
+                document.getElementById('domisili').value = data.domisili || "";
+                document.getElementById('tempatLahir').value = data.tempatLahir || "";
+                document.getElementById('tanggalLahir').value = data.tanggalLahir || "";
+                
+                statusSelect.value = data.status || "none";
+                groupRelasi.classList.toggle('hidden', data.status !== 'anak');
+
+                // Set ID Hidden
+                document.getElementById('parentID').value = data.parentID || "";
+                document.getElementById('idPasangan').value = data.idPasangan || "";
+
+                // Set Nama di Input Pencarian (Cari berdasarkan ID)
+                if (data.parentID) {
+                    const ortu = dataFull.keluarga.find(o => o.id == data.parentID);
+                    if (ortu) document.getElementById('inputCariParent').value = ortu.nama;
+                }
+                if (data.idPasangan) {
+                    const pasangan = dataFull.keluarga.find(o => o.id == data.idPasangan);
+                    if (pasangan) document.getElementById('inputCariPasangan').value = pasangan.nama;
+                }
+
+                if (data.foto && data.foto.startsWith('data:image')) {
+                    previewImage.src = data.foto;
+                    previewImage.classList.remove('hidden');
+                    defaultIcon.classList.add('hidden');
+                }
+            }
+        }
+
+        function updateDatalistNama() {
+            const dataFull = ambilDataLokal();
+            const datalist = document.getElementById('daftarKeluargaCari');
+            datalist.innerHTML = "";
+            
+            dataFull.keluarga.sort((a, b) => a.nama.localeCompare(b.nama));
+            dataFull.keluarga.forEach(orang => {
+                if (orang.id != idAnggotaEdit) {
+                    const option = document.createElement('option');
+                    option.value = orang.nama; 
+                    datalist.appendChild(option);
+                }
+            });
+        }
+
+        // Sinkronisasi Nama -> ID
+        function sinkronkanInput(idInputText, idInputHidden) {
             const txtInput = document.getElementById(idInputText);
             const hiddenID = document.getElementById(idInputHidden);
 
             txtInput.addEventListener('input', function() {
                 const val = this.value;
-                const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
-                const ketemu = daftar.find(o => o.nama.toLowerCase() === val.toLowerCase());
+                const dataFull = ambilDataLokal();
+                const ketemu = dataFull.keluarga.find(o => o.nama.toLowerCase() === val.toLowerCase());
 
                 if (ketemu) {
                     hiddenID.value = ketemu.id;
@@ -290,167 +335,44 @@
             });
         }
 
-        // Aktifkan pencarian untuk kedua input
-        sinkronkanInputKeID('inputCariParent', 'parentID');
-        sinkronkanInputKeID('inputCariPasangan', 'idPasangan');
-
-        function muatOpsiKeluarga() {
-            const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
-            parentSelect.innerHTML = '<option value="">-- Pilih Anggota Keluarga --</option>';
-            daftar.forEach(a => {
-                if (a.id != idAnggotaEdit) {
-                    parentSelect.innerHTML += `<option value="${a.id}">${a.nama}</option>`;
-                }
-            });
-        }
-
-        function muatDataUntukEdit(id) {
-            isiDaftarPasangan(id); // Isi dulu daftar namanya
-
-            const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
-            const data = daftar.find(a => a.id == id);
-
-            if (data) {
-                document.getElementById('namaLengkap').value = data.nama || "";
-                document.getElementById('domisili').value = data.domisili || "";
-                document.getElementById('tempatLahir').value = data.tempatLahir || "";
-                document.getElementById('tanggalLahir').value = data.tanggalLahir || "";
-                document.getElementById('idPasangan').value = data.idPasangan || ""; // Ambil ID Pasangan
-                
-                statusSelect.value = data.status || "none";
-                if (statusSelect.value !== 'none') {
-                    groupRelasi.classList.remove('hidden');
-                    parentSelect.value = data.parentID || "";
-                }
-
-                if (data.parentID) {
-                    const ortu = daftar.find(o => o.id == data.parentID);
-                    if (ortu) document.getElementById('inputCariParent').value = ortu.nama;
-                }
-                if (data.idPasangan) {
-                    const pasangan = daftar.find(o => o.id == data.idPasangan);
-                    if (pasangan) document.getElementById('inputCariPasangan').value = pasangan.nama;
-                }
-
-                if (data.foto && data.foto !== "") {
-                    previewImage.src = data.foto;
-                    previewImage.classList.remove('hidden');
-                    defaultIcon.classList.add('hidden');
-                }
-            }
-        }
-
-        function isiDaftarPasangan(idSekarang) {
-            const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
-            const selectPasangan = document.getElementById('idPasangan');
-            
-            // Kosongkan dulu kecuali opsi pertama
-            selectPasangan.innerHTML = '<option value="">-- Tidak ada / Belum dipilih --</option>';
-
-            daftar.forEach(anggota => {
-                // Jangan tampilkan diri sendiri di daftar pilihan pasangan
-                if (anggota.id != idSekarang) {
-                    let option = document.createElement('option');
-                    option.value = anggota.id;
-                    option.text = anggota.nama;
-                    selectPasangan.appendChild(option);
-                }
-            });
-        }
-
-        // Fungsi mengisi Datalist (panggil saat window.onload)
-        function updateDatalistNama() {
-            const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
-            const datalist = document.getElementById('daftarKeluargaCari');
-            datalist.innerHTML = "";
-            
-            // Urutkan A-Z
-            daftar.sort((a, b) => a.nama.localeCompare(b.nama));
-
-            daftar.forEach(orang => {
-                if (orang.id != idAnggotaEdit) {
-                    const option = document.createElement('option');
-                    option.value = orang.nama; 
-                    datalist.appendChild(option);
-                }
-            });
-        }
-
-        // Fungsi sinkronisasi Nama ke ID
-        function sinkronkanInputKeID(idInputText, idInputHidden) {
-            const txtInput = document.getElementById(idInputText);
-            const hiddenID = document.getElementById(idInputHidden);
-
-            txtInput.addEventListener('input', function() {
-                const val = this.value;
-                const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
-                const ketemu = daftar.find(o => o.nama.toLowerCase() === val.toLowerCase());
-
-                if (ketemu) {
-                    hiddenID.value = ketemu.id;
-                    this.style.borderColor = "#00e5ff"; // Warna fokus jika data valid
-                } else {
-                    hiddenID.value = ""; // Jika nama tidak terdaftar, ID dikosongkan
-                    this.style.borderColor = "orange"; // Penanda bahwa ini nama baru/bebas
-                }
-            });
-        }
-
-        // Aktifkan fungsi pencarian
-        sinkronkanInputKeID('inputCariParent', 'parentID');
-        sinkronkanInputKeID('inputCariPasangan', 'idPasangan');
-
-        // Logika Tampil/Sembunyi berdasarkan Status Kekerabatan
-        document.getElementById('statusKekerabatan').addEventListener('change', function() {
-            const status = this.value;
-            const groupRelasi = document.getElementById('groupRelasi');
-            const groupPasangan = document.getElementById('groupPasangan');
-
-            groupRelasi.classList.toggle('hidden', status !== 'anak');
-            groupPasangan.classList.toggle('hidden', status !== 'pasangan');
-        });
+        sinkronkanInput('inputCariParent', 'parentID');
+        sinkronkanInput('inputCariPasangan', 'idPasangan');
 
         async function simpanAnggota() {
             const currentId = idAnggotaEdit ? idAnggotaEdit : Date.now().toString();
+            let fotoFinal = previewImage.src;
 
-            // --- PERBAIKAN LOGIKA FOTO ---
-            let fotoFinal = "";
-
-            // Kita cek: Apakah previewImage punya isi, dan apakah isinya format DATA (bukan link HTTP)
-            if (!previewImage.classList.contains('hidden') && previewImage.src && previewImage.src.startsWith('data:image')) {
-                // Jika user sudah upload foto, previewImage.src akan berisi "data:image/jpeg;base64,..."
-                fotoFinal = previewImage.src; 
-            } else {
-                // Jika belum upload, atau isinya masih link website (http...), paksa simpan SVG biru tosca
+            // Jika foto kosong/default, berikan SVG default
+            if (previewImage.classList.contains('hidden') || !fotoFinal.startsWith('data:image')) {
                 fotoFinal = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><rect width='24' height='24' fill='%2300e5ff'/><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>`;
             }
 
             const dataBaru = {
+                action: "SAVE",
                 id: currentId,
                 nama: document.getElementById('namaLengkap').value,
                 parentID: document.getElementById('parentID').value,
-                status: document.getElementById('statusKekerabatan').value,
+                status: statusSelect.value,
                 domisili: document.getElementById('domisili').value,
                 foto: fotoFinal,
-                idPasangan: document.getElementById('idPasangan').value, // DATA PENTING BARU 
+                idPasangan: document.getElementById('idPasangan').value,
                 tempatLahir: document.getElementById('tempatLahir').value,
                 tanggalLahir: document.getElementById('tanggalLahir').value
             };
 
-            if (!dataBaru.nama) {
-                alert("Nama harus diisi!");
-                return;
-            }
+            if (!dataBaru.nama) return alert("Nama harus diisi!");
 
-            // --- LANJUTKAN PROSES SIMPAN SEPERTI BIASA ---
-            let daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
-            const index = daftar.findIndex(a => a.id == currentId);
-            if (index > -1) daftar[index] = dataBaru; else daftar.push(dataBaru);
-            localStorage.setItem('daftarKeluarga', JSON.stringify(daftar));
+            // SIMPAN KE LOKAL (dataCloud)
+            let dataFull = ambilDataLokal();
+            const index = dataFull.keluarga.findIndex(a => a.id == currentId);
+            if (index > -1) dataFull.keluarga[index] = dataBaru; else dataFull.keluarga.push(dataBaru);
+            localStorage.setItem('dataCloud', JSON.stringify(dataFull));
 
+            // SIMPAN KE CLOUD
             try {
-                document.getElementById('btnSimpan').innerText = "MENGIRIM...";
-                document.getElementById('btnSimpan').disabled = true;
+                const btn = document.getElementById('btnSimpan');
+                btn.innerText = "MENGIRIM...";
+                btn.disabled = true;
 
                 await fetch(URL_API, {
                     method: 'POST',
@@ -459,48 +381,46 @@
                     body: JSON.stringify(dataBaru)
                 });
                 
-                alert("Data Berhasil Disinkronkan!");
+                alert("Berhasil disimpan!");
                 window.location.href = 'index.html';
             } catch (e) {
-                alert("Tersimpan di HP, gagal sinkron Cloud.");
+                alert("Tersimpan di lokal, gagal sinkron Cloud.");
                 window.location.href = 'index.html';
             }
         }
 
         async function hapusAnggota() {
-            if (confirm("Yakin mau hapus data ini dari HP dan Cloud Google Sheets?")) {
-                const idTerpilih = idAnggotaEdit;
+            const idTerpilih = idAnggotaEdit;
+            if (!idTerpilih) return;
 
-                // 1. Tampilkan Loading
+            if (confirm("Yakin mau hapus data ini?")) {
                 const btnHapus = document.getElementById('btnHapus');
-                btnHapus.innerText = "MENGHAPUS DI CLOUD...";
+                btnHapus.innerText = "MENGHAPUS...";
                 btnHapus.disabled = true;
 
                 try {
-                    // 2. Kirim perintah hapus ke Google Sheets
-                    await fetch(URL_API, {
+                    // Kita kirim action & id lewat URL biar GAS gampang bacanya via e.parameter
+                    const urlHapus = `${URL_API}?action=delete&id=${idTerpilih}`;
+                    
+                    // Gunakan method POST tapi biarkan datanya di URL
+                    await fetch(urlHapus, { 
                         method: 'POST',
-                        mode: 'no-cors', // Penting untuk Google Apps Script
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            action: "delete", 
-                            id: idTerpilih 
-                        })
+                        mode: 'no-cors' // Supaya tidak kena blokir CORS browser
                     });
 
-                    // 3. Hapus dari memori Lokal (HP)
-                    let daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
-                    daftar = daftar.filter(a => a.id != idTerpilih);
-                    localStorage.setItem('daftarKeluarga', JSON.stringify(daftar));
+                    // Sisi Lokal: Hapus dari localStorage
+                    let dataFull = ambilDataLokal();
+                    dataFull.keluarga = dataFull.keluarga.filter(a => a.id != idTerpilih);
+                    localStorage.setItem('dataCloud', JSON.stringify(dataFull));
 
-                    alert("Data berhasil dihapus dari HP dan Cloud!");
-                    window.location.href = 'cari-anggota.html';
+                    alert("Data berhasil dihapus!");
+                    window.location.href = 'index.html'; 
 
                 } catch (e) {
                     console.error(e);
-                    alert("Gagal hapus di Cloud. Cek internet Om.");
-                    btnHapus.innerText = "HAPUS ANGGOTA";
+                    alert("Gagal sinkron Cloud. Cek internet.");
                     btnHapus.disabled = false;
+                    btnHapus.innerText = "HAPUS ANGGOTA";
                 }
             }
         }

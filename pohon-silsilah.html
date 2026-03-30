@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -106,7 +107,6 @@
     </div>
 
     <script>
-        const URL_API = "https://script.google.com/macros/s/AKfycbzq6nkc-geK0-64ZLm-KjcZ1XMoUUo-OGs5KleaYhD0zYELJswpz35omHiTFjC5nPcIdA/exec";
 
         const kalimatLucu = [ // Pastikan namanya konsisten
             "Sabar, lagi nyari foto {nama} yang paling glowing...",
@@ -116,6 +116,16 @@
             "Data sedang diperjalanan, semoga nggak kena macet...",
             "Mempersiapkan pohon, pastikan akar keluarga Mbah Muntari tetap kuat."
         ];
+
+        // FUNGSI UTAMA: Ambil data dari LocalStorage (Key: dataCloud)
+        function getDaftarKeluarga() {
+            const dataRaw = localStorage.getItem('dataCloud');
+            if (dataRaw) {
+                const parsed = JSON.parse(dataRaw);
+                return parsed.keluarga || []; // Ambil array keluarga saja
+            }
+            return [];
+        }
 
         function tampilkanKalimatAcak() {
             const el = document.getElementById('loadingText');
@@ -201,12 +211,11 @@
             try {
                 const response = await fetch(URL_API);
                 const data = await response.json();
-                // Simpan hasil terbaru ke lokal
-                localStorage.setItem('daftarKeluarga', JSON.stringify(data));
+                // PERBAIKAN: Simpan dengan key 'dataCloud' agar sama dengan index.html
+                localStorage.setItem('dataCloud', JSON.stringify(data));
                 renderPohon(); 
             } catch (error) {
                 console.log("Gagal sinkron, menggunakan data lokal.");
-                // Jika offline, tetap render apa yang ada di lokal
                 renderPohon(); 
             }
         }
@@ -230,22 +239,32 @@
         });
 
         function renderPohon() {
-            const daftar = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            const daftar = getDaftarKeluarga(); 
             const wrapper = document.getElementById('treeWrapper');
+            
             if (daftar.length === 0) {
-                wrapper.innerHTML = "<p class='text-center text-gray-400 mt-10 italic'>Belum ada data keluarga.</p>";
+                wrapper.innerHTML = "<p class='text-center text-gray-400 mt-10 italic'>Belum ada data keluarga...</p>";
                 return;
             }
-            const akarKeluarga = daftar.filter(a => a.status === 'none' || !a.parentID);
-            let htmlUtama = "";
-            akarKeluarga.forEach(kepala => htmlUtama += buildNode(kepala, daftar));
-            wrapper.innerHTML = htmlUtama;
-          
-            // AKTIFKAN FITUR GESER SETELAH RENDER SELESAI
-                aktifkanFiturGeser();  
             
-            // --- PANGGIL INI AGAR LOADING HILANG ---
-                sembunyikanLoading();
+            // PERBAIKAN LOGIKA DISINI:
+            // Akar adalah yang tidak punya parentID DAN statusnya bukan 'pasangan'
+            // Jadi menantu (Ramelan) tidak akan pernah jadi akar meskipun parentID-nya kosong.
+            const akarKeluarga = daftar.filter(a => {
+                const gapunyaOrangTua = (a.parentID === 'none' || a.parentID === '' || !a.parentID);
+                const bukanPasangan = (a.status !== 'pasangan');
+                return gapunyaOrangTua && bukanPasangan;
+            });
+
+            let htmlUtama = "";
+            akarKeluarga.forEach(kepala => {
+                htmlUtama += buildNode(kepala, daftar);
+            });
+            
+            wrapper.innerHTML = htmlUtama;
+            
+            aktifkanFiturGeser();  
+            sembunyikanLoading();
         }
 
         function buildNode(orang, semuaData) {
@@ -315,7 +334,15 @@
                 nodeHtml += `<ul class="tree mt-4 hidden-children list-anak" id="children-${orang.id}">`;
                 
                 // URUTKAN TERLEBIH DAHULU berdasarkan anakKe
-                anakAnak.sort((a, b) => (a.anakKe || 99) - (b.anakKe || 99));
+                anakAnak.sort((a, b) => {
+                    // Jika keduanya punya urutan, bandingkan urutannya
+                    if (a.anakKe && b.anakKe) {
+                        return parseInt(a.anakKe) - parseInt(b.anakKe);
+                    }
+                    // Jika salah satu tidak punya urutan (baru diedit/input), 
+                    // jangan dipindah ke bawah (biarkan di posisi aslinya)
+                    return 0; 
+                });
 
                 anakAnak.forEach(anak => {
                     // Tambahkan class 'tree-item' dan data-id agar bisa dikenali saat digeser
@@ -366,22 +393,35 @@
         }
 
         function simpanUrutanBaru(kontainer) {
-            let daftarMaster = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
-            const semuaKartuDiSini = kontainer.querySelectorAll('.kartu-anak');
+            // Ambil data dari key yang benar: 'dataCloud'
+            let dataFull = JSON.parse(localStorage.getItem('dataCloud')) || { keluarga: [] };
+            let daftarKeluarga = dataFull.keluarga;
+
+            const semuaKartuDiSini = kontainer.querySelectorAll(':scope > .kartu-anak');
             
+            let urutanBerubah = false;
+
             semuaKartuDiSini.forEach((kartu, index) => {
                 const idAnak = kartu.getAttribute('data-id');
-                const orang = daftarMaster.find(a => a.id == idAnak);
+                const orang = daftarKeluarga.find(a => a.id.toString() === idAnak.toString());
+                
                 if (orang) {
-                    orang.anakKe = index + 1;
+                    const urutanBaru = index + 1;
+                    if (orang.anakKe !== urutanBaru) {
+                        orang.anakKe = urutanBaru;
+                        urutanBerubah = true;
+                    }
                 }
             });
 
-            localStorage.setItem('daftarKeluarga', JSON.stringify(daftarMaster));
-            
-            // --- PANGGIL KIRIM KE CLOUD DISINI ---
-            kirimUpdateKeCloud(daftarMaster); 
-        } // <--- Penutup fungsi simpanUrutanBaru
+            if (urutanBerubah) {
+                // Simpan ke Local Storage agar saat refresh tetap di posisi baru
+                localStorage.setItem('dataCloud', JSON.stringify(dataFull));
+                
+                // Kirim ke Google Sheets agar permanen
+                kirimUpdateKeCloud(daftarKeluarga); 
+            }
+        }// <--- Penutup fungsi simpanUrutanBaru
 
         // Gunakan ini untuk memastikan halaman benar-benar siap
         window.addEventListener('DOMContentLoaded', () => {
