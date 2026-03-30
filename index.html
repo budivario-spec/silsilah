@@ -243,12 +243,18 @@
 
         function tampilkanBadge(kel, ikl) {
             if (kel > 0) {
-                const menuSilsilah = document.getElementById('menu-silsilah'); // Pastikan ID ini ada di HTML kartu
-                menuSilsilah.innerHTML += `<span class="badge-notif">${kel}</span>`;
+                const menuSilsilah = document.getElementById('menu-silsilah');
+                // Cek dulu apakah elemennya ada sebelum diisi innerHTML
+                if (menuSilsilah) {
+                    menuSilsilah.innerHTML += `<span class="badge-notif">${kel}</span>`;
+                }
             }
             if (ikl > 0) {
-                const menuKabar = document.getElementById('menu-kabar'); // Pastikan ID ini ada di HTML kartu
-                menuKabar.innerHTML += `<span class="badge-notif">${ikl}</span>`;
+                // Cari menu kabar, kalau tidak ada, jangan dipaksa
+                const menuKabar = document.getElementById('menu-kabar'); 
+                if (menuKabar) {
+                    menuKabar.innerHTML += `<span class="badge-notif">${ikl}</span>`;
+                }
             }
         }
 
@@ -284,12 +290,9 @@
             const elHidup = document.getElementById('jumlahHidup');
             const elWafat = document.getElementById('jumlahWafat');
 
-            // Fungsi hitung dengan pengaman (Optional Chaining)
             const hitungStatus = (data) => {
                 if (!data || !Array.isArray(data)) return { total: 0, hidup: 0, wafat: 0 };
-                
-                let hidup = 0;
-                let wafat = 0;
+                let hidup = 0, wafat = 0;
                 data.forEach(a => {
                     const nama = (a.nama || "").toLowerCase();
                     const isAlm = nama.includes("(alm.)") || nama.includes("(almh.)");
@@ -299,7 +302,7 @@
                 return { total: data.length, hidup, wafat };
             };
 
-            // 1. Tampilkan dari Cache Lokal (Agar Langsung Muncul)
+            // 1. Load dari LocalStorage dulu
             const dataLokalRaw = localStorage.getItem('dataCloud');
             const dataLokal = dataLokalRaw ? JSON.parse(dataLokalRaw) : { keluarga: [], iklan: [] };
             
@@ -308,38 +311,38 @@
                 if (elJumlah) elJumlah.innerText = statsLokal.total;
                 if (elHidup) elHidup.innerText = statsLokal.hidup;
                 if (elWafat) elWafat.innerText = statsLokal.wafat;
-                
-                updateAngkaGenerasi(dataLokal.keluarga, elGen);
-                renderIklan(dataLokal.iklan || [], containerIklan);
+                if (elGen) updateAngkaGenerasi(dataLokal.keluarga, elGen);
+                if (containerIklan) renderIklan(dataLokal.iklan || [], containerIklan);
             }
 
-            // 2. Tarik Data Baru dari Cloud
+            // 2. Tarik Data dari Cloud
             try {
-                // Gunakan parameter ?t= agar tidak kena cache browser
                 const response = await fetch(URL_API + "?t=" + Date.now());
                 const resJson = await response.json();
                 
-                // VALIDASI KRITIKAL: Pastikan properti 'keluarga' ada
                 if (!resJson || !resJson.keluarga) {
-                    console.warn("Format data dari Cloud tidak sesuai (keluarga tidak ditemukan).");
+                    console.warn("Data cloud kosong atau tidak valid.");
                     return; 
                 }
 
-                cekNotifikasiBaru(resJson); 
+                // Jalankan notifikasi dengan try-catch agar jika ID menu tidak ada, dashboard tetap update
+                try {
+                    cekNotifikasiBaru(resJson); 
+                } catch (e) {
+                    console.warn("Gagal menampilkan notifikasi (ID menu mungkin tidak ditemukan)");
+                }
+
                 localStorage.setItem('dataCloud', JSON.stringify(resJson));
                 
                 const statsCloud = hitungStatus(resJson.keluarga);
                 if (elJumlah) elJumlah.innerText = statsCloud.total;
                 if (elHidup) elHidup.innerText = statsCloud.hidup;
                 if (elWafat) elWafat.innerText = statsCloud.wafat;
-
-                updateAngkaGenerasi(resJson.keluarga, elGen);
-                renderIklan(resJson.iklan || [], containerIklan);
+                if (elGen) updateAngkaGenerasi(resJson.keluarga, elGen);
+                if (containerIklan) renderIklan(resJson.iklan || [], containerIklan);
 
             } catch (err) {
                 console.error("Gagal sinkronisasi cloud:", err);
-                // Jika gagal, set angka jadi 0 jika di cache memang kosong
-                if (!dataLokalRaw && elJumlah) elJumlah.innerText = "0";
             }
         }
 
