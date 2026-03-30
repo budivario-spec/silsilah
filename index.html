@@ -110,7 +110,7 @@
         .wadah-refleksi {
             position: relative;
             /* Memberikan jarak bawah agar refleksi punya ruang */
-            padding-bottom: 50px; 
+            padding-bottom: 20px; 
         }
 
         /* Terapkan refleksi pada Swiper Container */
@@ -142,7 +142,9 @@
         }
 
         .swiper-pagination {
-            bottom: -15px !important; /* Menggeser titik ke area padding yang kita buat tadi */
+            position: relative !important;
+            bottom: -15px !important; /* Angkat sedikit mendekat ke refleksi */
+            margin-top: 10px;
         }
 
         .swiper-wrapper {
