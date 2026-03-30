@@ -313,19 +313,31 @@
         }
 
         function tampilkanPesanSelamatDatang(kel, ikl) {
-            // Membuat pesan pop-up sederhana di bawah layar
             const toast = document.createElement('div');
-            toast.className = "fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-full text-sm z-50 shadow-2xl border border-[#00e5ff]";
             
-            let pesan = "Halo Om! ";
-            if (kel > 0) pesan += `${kel} Anggota Baru ditambahkan. `;
-            if (ikl > 0) pesan += `${ikl} Kabar/Iklan Baru.`;
+            // POSISI: 1/5 Atas (top-[10%]), BG Putih, Border Kotak Sedikit Rounded, Teks Abu Gelap
+            toast.className = "fixed top-[10%] left-1/2 -translate-x-1/2 bg-white/95 text-gray-700 px-6 py-4 rounded-xl text-sm z-[9999] shadow-[0_10px_25px_-5px_rgba(0,0,0,0.5)] border border-gray-100 flex items-center gap-3 min-w-[280px] backdrop-blur-sm";
             
-            toast.innerText = pesan;
+            // Tambahkan sedikit ikon di depan teks agar lebih manis
+            let pesan = "👋 Hai! ";
+            if (kel > 0) pesan += `<br><b>${kel}</b> Anggota Baru ditambahkan.`;
+            if (ikl > 0) pesan += `<br><b>${ikl}</b> Kabar/Iklan Baru tersedia.`;
+            
+            toast.innerHTML = `
+                <div class="w-1 h-8 bg-[#00e5ff] rounded-full"></div>
+                <div class="flex-1">${pesan}</div>
+            `;
+            
             document.body.appendChild(toast);
 
-            // Hilang otomatis setelah 5 detik
-            setTimeout(() => toast.remove(), 5000);
+            // Animasi masuk (Opsional: Tambahkan di CSS)
+            toast.style.animation = "slideDown 0.5s ease-out";
+
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transition = "opacity 0.5s ease";
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
         }
 
         // Panggil ini SETELAH user mengklik menu atau melihat data agar notif hilang
