@@ -382,67 +382,65 @@
             localStorage.setItem('last_count', JSON.stringify(counts));
         }
 
-       async function perbaruiDashboard() {
+        // FUNGSI 1: Ambil dari HP (Cepat & Offline)
+        function perbaruiDashboardLokal() {
             const elJumlah = document.getElementById('angkaJumlah');
             const elGen = document.getElementById('angkaTotalGenerasi');
             const containerIklan = document.getElementById('containerIklanCloud');
             const elHidup = document.getElementById('jumlahHidup');
             const elWafat = document.getElementById('jumlahWafat');
 
-            const hitungStatus = (data) => {
-                if (!data || !Array.isArray(data)) return { total: 0, hidup: 0, wafat: 0 };
-                let hidup = 0, wafat = 0;
-                data.forEach(a => {
-                    const nama = (a.nama || "").toLowerCase();
-                    const isAlm = nama.includes("(alm.)") || nama.includes("(almh.)");
-                    const statusMeninggal = a.status === "Meninggal" || a.status === "Wafat";
-                    if (isAlm || statusMeninggal) { wafat++; } else { hidup++; }
-                });
-                return { total: data.length, hidup, wafat };
-            };
-
-            // 1. Load dari LocalStorage dulu
             const dataLokalRaw = localStorage.getItem('dataCloud');
-            const dataLokal = dataLokalRaw ? JSON.parse(dataLokalRaw) : { keluarga: [], iklan: [] };
-            
-            if (dataLokal.keluarga && dataLokal.keluarga.length > 0) {
-                const statsLokal = hitungStatus(dataLokal.keluarga);
-                if (elJumlah) elJumlah.innerText = statsLokal.total;
-                if (elHidup) elHidup.innerText = statsLokal.hidup;
-                if (elWafat) elWafat.innerText = statsLokal.wafat;
+            if (dataLokalRaw) {
+                const dataLokal = JSON.parse(dataLokalRaw);
+                // Update angka-angka
+                const stats = hitungStatusSederhana(dataLokal.keluarga);
+                if (elJumlah) elJumlah.innerText = stats.total;
+                if (elHidup) elHidup.innerText = stats.hidup;
+                if (elWafat) elWafat.innerText = stats.wafat;
                 if (elGen) updateAngkaGenerasi(dataLokal.keluarga, elGen);
                 if (containerIklan) renderIklan(dataLokal.iklan || [], containerIklan);
             }
+        }
 
-            // 2. Tarik Data dari Cloud
+        // FUNGSI 2: Ambil dari Internet (Update Data Terbaru)
+        async function perbaruiDashboardCloud() {
             try {
-                const response = await fetch(URL_API + "?t=" + Date.now());
+                // Gunakan timeout pada fetch agar tidak menggantung selamanya
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik max
+
+                const response = await fetch(URL_API + "?t=" + Date.now(), { signal: controller.signal });
+                clearTimeout(timeoutId);
+
                 const resJson = await response.json();
                 
-                if (!resJson || !resJson.keluarga) {
-                    console.warn("Data cloud kosong atau tidak valid.");
-                    return; 
+                if (resJson && resJson.keluarga) {
+                    // Cek notifikasi dulu
+                    try { cekNotifikasiBaru(resJson); } catch (e) {}
+
+                    // Simpan ke HP
+                    localStorage.setItem('dataCloud', JSON.stringify(resJson));
+                    
+                    // Update tampilan lagi dengan data terbaru
+                    perbaruiDashboardLokal();
                 }
-
-                // Jalankan notifikasi dengan try-catch agar jika ID menu tidak ada, dashboard tetap update
-                try {
-                    cekNotifikasiBaru(resJson); 
-                } catch (e) {
-                    console.warn("Gagal menampilkan notifikasi (ID menu mungkin tidak ditemukan)");
-                }
-
-                localStorage.setItem('dataCloud', JSON.stringify(resJson));
-                
-                const statsCloud = hitungStatus(resJson.keluarga);
-                if (elJumlah) elJumlah.innerText = statsCloud.total;
-                if (elHidup) elHidup.innerText = statsCloud.hidup;
-                if (elWafat) elWafat.innerText = statsCloud.wafat;
-                if (elGen) updateAngkaGenerasi(resJson.keluarga, elGen);
-                if (containerIklan) renderIklan(resJson.iklan || [], containerIklan);
-
             } catch (err) {
-                console.error("Gagal sinkronisasi cloud:", err);
+                console.warn("Gagal sinkron cloud (mungkin offline):", err.message);
             }
+        }
+
+        // Helper untuk hitung status (pindahkan logika hitung kesini agar rapi)
+        function hitungStatusSederhana(data) {
+            if (!data || !Array.isArray(data)) return { total: 0, hidup: 0, wafat: 0 };
+            let hidup = 0, wafat = 0;
+            data.forEach(a => {
+                const nama = (a.nama || "").toLowerCase();
+                const isAlm = nama.includes("(alm.)") || nama.includes("(almh.)");
+                const statusMeninggal = a.status === "Meninggal" || a.status === "Wafat";
+                if (isAlm || statusMeninggal) { wafat++; } else { hidup++; }
+            });
+            return { total: data.length, hidup, wafat };
         }
 
         // Modifikasi fungsi tandaiSudahDilihat agar lebih cerdas
@@ -519,14 +517,16 @@
             elemen.innerText = setGenerasi.size;
         }
 
-        // Eksekusi utama
-        // Ganti bagian eksekusi utama Om:
-        document.addEventListener('DOMContentLoaded', async () => {
-            // 1. Jalankan dashboard dari cache lokal dulu agar tidak kosong
-            await perbaruiDashboard(); 
+        // Eksekusi utama yang lebih aman
+        window.addEventListener('load', () => {
+            // 1. Jalankan dashboard dari cache lokal SEGERA agar user tidak melihat angka 0
+            perbaruiDashboardLokal(); 
             
-            // 2. Jika sw.js bermasalah, kita pastikan fetch cloud tetap jalan
-            console.log("Sinkronisasi data sedang berlangsung...");
+            // 2. Beri jeda 1 detik sebelum tarik data dari Cloud (mencegah Message Channel Closed)
+            setTimeout(async () => {
+                console.log("Sinkronisasi data cloud dimulai...");
+                await perbaruiDashboardCloud();
+            }, 1000);
         });
     </script>
 
