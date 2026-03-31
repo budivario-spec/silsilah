@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <title>Ruang Keluarga - Silsilah</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #f0f2f5; font-family: -apple-system, sans-serif; }
+        .fb-shadow { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+        
+        /* Animasi Pop Up Reaksi */
+        .reaction-pop { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px;
+            background: linear-gradient(135deg, #00e5ff, #00acc1);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 24px; box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4);
+            z-index: 100; transition: transform 0.2s;
+            animation: pulse-light 2s infinite;
+        }
+        @keyframes pulse-light {
+            0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 229, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+        }
+        .fab:active { transform: scale(0.9); }
+
+        /* Kustom Scrollbar area komentar */
+        .comment-area::-webkit-scrollbar { width: 0px; }
+    </style>
+</head>
+<body class="pb-24">
+
+    <div class="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
+        <button onclick="history.back()" class="text-gray-600"><i class="fas fa-arrow-left text-lg"></i></button>
+        <h1 class="text-lg font-black text-gray-800 tracking-tight">Ruang Keluarga</h1>
+        <div class="w-8"></div>
+    </div>
+
+    <div id="feedContainer" class="max-w-md mx-auto mt-2 space-y-2">
+        <div class="bg-white p-10 text-center rounded-xl shadow-sm">
+            <div class="animate-spin inline-block w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full mb-2"></div>
+            <p class="text-gray-400 text-sm italic">Memuat obrolan keluarga...</p>
+        </div>
+    </div>
+
+    <div class="fab" onclick="bukaModalPost()">
+        <i class="fas fa-plus"></i>
+    </div>
+
+    <div id="modalPost" class="fixed inset-0 bg-black/60 z-[200] hidden items-end sm:items-center justify-center backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transition-all transform translate-y-full" id="modalContent">
+            <div class="flex justify-between items-center mb-5">
+                <div class="flex items-center gap-3">
+                    <img id="userAvatarModal" src="" class="w-10 h-10 rounded-full bg-gray-200">
+                    <div>
+                        <p id="userNameModal" class="font-bold text-sm">...</p>
+                        <span class="bg-green-100 text-[10px] px-2 py-0.5 rounded text-green-600 font-bold uppercase tracking-tighter">Online</span>
+                    </div>
+                </div>
+                <button onclick="tutupModalPost()" class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500">&times;</button>
+            </div>
+            
+            <textarea id="inputTeks" class="w-full h-36 p-0 border-none focus:ring-0 text-gray-800 placeholder-gray-400 text-base resize-none" placeholder="Apa yang sedang dipikirkan?"></textarea>
+            
+            <div id="previewContainer" class="hidden mb-4 relative">
+                <img id="previewImage" class="w-full h-48 object-cover rounded-xl border border-gray-100">
+                <video id="previewVideo" class="hidden w-full h-48 object-cover rounded-xl border border-gray-100" controls></video>
+                <button onclick="hapusLampiran()" class="absolute top-2 right-2 bg-black/50 text-white w-8 h-8 rounded-full">&times;</button>
+            </div>
+
+            <div class="flex items-center gap-4 mb-4">
+                <input type="file" id="inputMedia" class="hidden" accept="image/*,video/*" onchange="previewMedia(this)">
+                <button onclick="document.getElementById('inputMedia').click()" class="flex items-center gap-2 text-gray-500 text-sm font-bold">
+                    <i class="fas fa-image text-green-500 text-xl"></i> Foto / Video (Video maksimal 15 detik)
+                </button>
+            </div>
+
+            <button id="btnKirim" onclick="kirimPostingan()" class="w-full bg-[#00e5ff] hover:bg-[#00acc1] text-white font-black py-4 rounded-2xl shadow-lg shadow-cyan-200/50 active:scale-95 transition-all uppercase tracking-widest text-sm">
+                POSTING SEKARANG
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 1. Render Utama
+        function renderRuangKeluarga(dataRK, dataKom) {
+            const container = document.getElementById('feedContainer');
+            
+            // Cek apakah data benar-benar ada
+            if (!dataRK || dataRK.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-10 text-center rounded-xl shadow-sm">
+                        <i class="fas fa-comments text-gray-200 text-5xl mb-3"></i>
+                        <p class="text-gray-400 text-sm italic">Belum ada obrolan. Yuk, jadi yang pertama menyapa keluarga!</p>
+                    </div>`;
+                return;
+            }
+
+            // Balik urutan: Postingan terbaru di paling atas
+            const posts = [...dataRK].reverse();
+            let html = '';
+
+            posts.forEach(post => {
+                // Pastikan kita pakai properti yang benar dari JSON (id, nama, avatar, teks, dll)
+                const komentarPost = dataKom ? dataKom.filter(k => k.id_post === post.id) : [];
+                const fotoProfil = cariFotoProfil(post.nama);
+                
+                html += `
+                <div class="bg-white fb-shadow overflow-hidden mb-2">
+                    <div class="p-4 flex items-center">
+                        <img src="${fotoProfil}" class="w-10 h-10 rounded-full border border-gray-100 shadow-sm">
+                        <div class="ml-3">
+                            <p class="font-bold text-sm text-gray-900 leading-none">${post.nama}</p>
+                            <p class="text-[10px] text-gray-500 mt-1">${formatWaktu(post.tanggal)} • <i class="fas fa-globe-asia"></i></p>
+                        </div>
+                    </div>
+
+                    <div class="px-4 pb-3 text-gray-800 text-sm leading-relaxed">
+                        ${post.teks}
+                    </div>
+
+                    ${post.media ? `
+                        <div class="w-full bg-gray-100 overflow-hidden">
+                            ${post.tipe === 'Video' ? 
+                                `<video src="${post.media}" controls class="w-full max-h-[400px]"></video>` : 
+                                `<img src="${post.media}" class="w-full h-auto object-cover max-h-[400px]" loading="lazy">`
+                            }
+                        </div>` : ''}
+
+                    <div class="px-4 py-2 border-t border-gray-50 flex justify-between items-center text-[11px] text-gray-500">
+                        <div class="flex items-center gap-1">
+                            <span class="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px]"><i class="fas fa-thumbs-up"></i></span>
+                            <span class="ml-1">${post.reaksi || 0}</span>
+                        </div>
+                        <div class="cursor-pointer font-medium" onclick="toggleKomentar('${post.id}')">${komentarPost.length} Komentar</div>
+                    </div>
+
+                    <div class="flex border-t border-gray-100 px-2 py-1">
+                        <button class="flex-1 py-2 flex items-center justify-center gap-2 text-gray-600 font-bold text-xs active:text-blue-500" onclick="handleLike(this)">
+                            <i class="far fa-thumbs-up text-lg"></i> Tanggapi
+                        </button>
+                        <button class="flex-1 py-2 flex items-center justify-center gap-2 text-gray-600 font-bold text-xs" onclick="toggleKomentar('${post.id}')">
+                            <i class="far fa-comment-alt text-lg"></i> Balas
+                        </button>
+                    </div>
+
+                    <div id="komentar-${post.id}" class="bg-gray-50 p-4 border-t border-gray-100 hidden">
+                        <div class="space-y-3">
+                            ${renderListKomentar(komentarPost)}
+                            <div class="flex gap-2 items-center mt-3">
+                                <img src="${getAvatarLogin()}" class="w-8 h-8 rounded-full border border-gray-200">
+                                <div class="flex-1 relative">
+                                    <input type="text" id="input-${post.id}" 
+                                        onkeypress="if(event.key === 'Enter') kirimKomentar('${post.id}')"
+                                        class="w-full bg-white border border-gray-200 rounded-full py-2 px-4 text-xs focus:outline-none" placeholder="Tulis balasan...">
+                                    <button onclick="kirimKomentar('${post.id}')" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#00e5ff]">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function getAvatarLogin() {
+            return cariFotoProfil(localStorage.getItem('userNama') || "Tamu");
+        }
+
+        // Tambahkan fungsi ini di dalam tag <script>
+        function cekIdentitas() {
+            // 1. Ambil data dari storage
+            const namaUser = localStorage.getItem('userNama') || "Tamu";
+            
+            // 2. Cari foto asli dari data silsilah (bukan cuma dari storage)
+            // Ini supaya kalau foto di Google Sheet diubah, di sini ikut berubah
+            const fotoUser = cariFotoProfil(namaUser);
+
+            if (!localStorage.getItem('userNama')) {
+                console.warn("Nama pengguna tidak ditemukan di storage, menggunakan status Tamu.");
+            } else {
+                console.log("Identitas terverifikasi: " + namaUser);
+            }
+
+            // --- UPDATE TAMPILAN UI ---
+
+            // A. Update Foto Profil Kecil di Input Komentar (jika ada)
+            const imgKomentar = document.querySelectorAll('img[src*="ui-avatars.com/api/?name=User"]');
+            imgKomentar.forEach(img => {
+                img.src = fotoUser;
+            });
+
+            // B. Update Foto & Nama di Modal Postingan (saat mau buat status baru)
+            const modalImg = document.querySelector('#modalPost img');
+            const modalName = document.querySelector('#modalPost p.font-bold');
+            const modalTextarea = document.getElementById('inputTeks');
+
+            if (modalImg) modalImg.src = fotoUser;
+            if (modalName) modalName.innerText = namaUser;
+            if (modalTextarea) {
+                // Biar lebih akrab, kita panggil nama depan saja di placeholder
+                const namaDepan = namaUser.split(' ')[0];
+                modalTextarea.placeholder = `Apa yang sedang ${namaDepan} pikirkan?`;
+            }
+        }
+
+        function kompresGambar(file, maxWidth = 800, quality = 0.7) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Hitung rasio agar foto tidak gepeng
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Ubah ke Base64 dengan kualitas 0.7 (70%)
+                        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        resolve(dataUrl);
+                    };
+                };
+            });
+        }
+
+        let mediaData = ""; // Untuk simpan Base64
+        let mediaTipe = "Teks";
+
+        // 1. Preview Media & Ubah ke Base64
+        async function previewMedia(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const container = document.getElementById('previewContainer');
+            const img = document.getElementById('previewImage');
+            const vid = document.getElementById('previewVideo');
+            const btnKirim = document.getElementById('btnKirim');
+
+            // Reset tampilan preview & tombol
+            btnKirim.disabled = true;
+            btnKirim.innerText = "MENGECEK MEDIA...";
+
+            if (file.type.startsWith('image')) {
+                // --- PROSEDUR FOTO (AUTO-COMPRESS) ---
+                mediaTipe = 'Gambar';
+                mediaData = await kompresGambar(file, 800, 0.6);
+                img.src = mediaData;
+                img.classList.remove('hidden');
+                vid.classList.add('hidden');
+                container.classList.remove('hidden');
+                btnKirim.disabled = false;
+                btnKirim.innerText = "POSTING SEKARANG";
+            } 
+            else if (file.type.startsWith('video')) {
+                // --- PROSEDUR VIDEO (KUNCI 5 DETIK) ---
+                const videoTemp = document.createElement('video');
+                videoTemp.preload = 'metadata';
+                
+                videoTemp.onloadedmetadata = function() {
+                    window.URL.revokeObjectURL(videoTemp.src);
+                    const durasi = videoTemp.duration;
+
+                    // CEK DURASI DI SINI
+                    if (durasi > 15.5) { 
+                        alert("Waduh, videonya kepanjangan! Maksimal 15 detik.");
+                        input.value = "";
+                        btnKirim.disabled = false;
+                        btnKirim.innerText = "POSTING SEKARANG";
+                        return;
+                    }
+
+                    // Jika durasi lolos, baru ubah ke Base64
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        mediaData = e.target.result;
+                        mediaTipe = 'Video';
+                        vid.src = mediaData;
+                        vid.classList.remove('hidden');
+                        img.classList.add('hidden');
+                        container.classList.remove('hidden');
+                        btnKirim.disabled = false;
+                        btnKirim.innerText = "POSTING SEKARANG";
+                    };
+                    reader.readAsDataURL(file);
+                };
+
+                videoTemp.onerror = function() {
+                    alert("Format video tidak didukung atau rusak, Om.");
+                    btnKirim.disabled = false;
+                    btnKirim.innerText = "POSTING SEKARANG";
+                };
+
+                videoTemp.src = URL.createObjectURL(file);
+            }
+        }
+
+        function hapusLampiran() {
+            mediaData = "";
+            mediaTipe = "Teks";
+            document.getElementById('inputMedia').value = "";
+            document.getElementById('previewContainer').classList.add('hidden');
+        }
+
+        // 1. Render List Komentar
+        function renderListKomentar(list) {
+            return list.map(k => {
+                // Tambahkan baris ini untuk cari foto komentator
+                const fotoKomentator = cariFotoProfil(k.nama); 
+                return `
+                    <div class="flex gap-2 mb-2">
+                        <img src="${fotoKomentator}" class="w-7 h-7 rounded-full border border-gray-100">
+                        <div class="bg-white px-3 py-2 rounded-2xl shadow-sm border border-gray-100 flex-1">
+                            <p class="font-bold text-[11px] text-gray-900">${k.nama}</p>
+                            <p class="text-xs text-gray-700 mt-0.5">${k.teks}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 2. Format Waktu (Contoh: "Baru saja", "2 jam lalu")
+        function formatWaktu(isoString) {
+            const tanggal = new Date(isoString);
+            return tanggal.toLocaleDateString('id-ID', { 
+                day: 'numeric', 
+                month: 'short', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
+        // Toggle Area Komentar
+        function toggleKomentar(postId) {
+            const area = document.getElementById('komentar-' + postId);
+            if (area.classList.contains('hidden')) {
+                area.classList.remove('hidden');
+            } else {
+                area.classList.add('hidden');
+            }
+        }
+
+        async function kirimKomentar(postId) {
+            const inputEl = document.getElementById(`input-${postId}`);
+            const teks = inputEl.value;
+            
+            if (!teks.trim()) return; // Jangan kirim kalau kosong
+
+            // Efek visual: matikan input sementara
+            inputEl.disabled = true;
+            inputEl.placeholder = "Mengirim...";
+
+            const dataKom = {
+                action: "SIMPAN_KOMENTAR",
+                id_post: postId,
+                nama: localStorage.getItem('userNama') || "Tamu",
+                teks: teks
+            };
+
+            try {
+                const response = await fetch(URL_API, {
+                    method: 'POST',
+                    body: JSON.stringify(dataKom)
+                });
+
+                const hasil = await response.json();
+                if (hasil.status === "success") {
+                    // Bersihkan input & refresh data
+                    inputEl.value = "";
+                    inputEl.placeholder = "Tulis balasan...";
+                    
+                    // Tips: Panggil lagi fungsi ambil data agar komentar baru langsung muncul
+                    // muatUlangDataSilsilah(); 
+                    
+                    // Atau cara cepat: reload halaman
+                    location.reload(); 
+                }
+            } catch (err) {
+                console.error("Gagal kirim komentar:", err);
+                alert("Aduh, gagal kirim komentar. Coba lagi ya Om!");
+            } finally {
+                inputEl.disabled = false;
+            }
+        }
+
+        // Handle Like/Tanggapi Sederhana
+        async function handleLike(btn, postId) {
+            const icon = btn.querySelector('i');
+            const labelReaksi = btn.closest('.bg-white').querySelector('.flex.items-center.gap-1 span.ml-1');
+            
+            // Efek visual instant (Optimistic UI)
+            const isLiked = icon.classList.contains('fas');
+            let jumlahSekarang = parseInt(labelReaksi.innerText) || 0;
+
+            if (!isLiked) {
+                icon.classList.replace('far', 'fas');
+                btn.classList.add('text-blue-500', 'reaction-pop');
+                jumlahSekarang++;
+            } else {
+                icon.classList.replace('fas', 'far');
+                btn.classList.remove('text-blue-500', 'reaction-pop');
+                jumlahSekarang--;
+            }
+            labelReaksi.innerText = jumlahSekarang;
+
+            // KIRIM KE GOOGLE SHEETS
+            try {
+                const response = await fetch(URL_API, {
+                    method: 'POST',
+                    mode: 'no-cors', // Tetap pakai ini agar tidak dicegat CORS
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                    body: JSON.stringify({
+                        action: "UPDATE_REAKSI",
+                        id_post: postId,
+                        tipe: "like"
+                    })
+                });
+
+                // JANGAN PAKAI: const hasil = await response.json(); 
+                // Karena mode 'no-cors' tidak akan membiarkan kita baca isinya.
+                
+                console.log("Reaksi terkirim ke server (Mode Opaque)");
+
+            } catch (err) {
+                console.error("Error network:", err);
+            }
+        }
+
+        // Logika Modal
+        function bukaModalPost() {
+            const modal = document.getElementById('modalPost');
+            const content = document.getElementById('modalContent');
+            
+            // Ambil data asli pengguna
+            const namaLogin = localStorage.getItem('userNama') || "Tamu";
+            const fotoLogin = cariFotoProfil(namaLogin);
+
+            // Pasang ke modal
+            document.getElementById('userNameModal').innerText = namaLogin;
+            document.getElementById('userAvatarModal').src = fotoLogin;
+            document.getElementById('inputTeks').placeholder = `Apa yang sedang ${namaLogin.split(' ')[0]} pikirkan?`;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => content.classList.remove('translate-y-full'), 10);
+        }
+
+        function tutupModalPost() {
+            const modal = document.getElementById('modalPost');
+            const content = document.getElementById('modalContent');
+            content.classList.add('translate-y-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // 2. Fungsi Kirim Postingan (Gunakan nama asli)
+        async function kirimPostingan() {
+            const teks = document.getElementById('inputTeks').value;
+            const namaUser = localStorage.getItem('userNama') || "Tamu";
+            const avatarUser = getAvatarLogin();
+
+            if (!teks.trim() && !mediaData) return alert("Isi tulisan atau foto dulu, Om!");
+
+            const btn = document.getElementById('btnKirim');
+            btn.disabled = true;
+            btn.innerText = "SEDANG MENGIRIM...";
+
+            const payload = {
+                action: "SIMPAN_POST",
+                nama: namaUser,
+                avatar: avatarUser,
+                teks: teks,
+                media: mediaData, // Ini berisi Base64 foto/video
+                tipe: mediaTipe
+            };
+
+            try {
+                await fetch(URL_API, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payload)
+                });
+
+                setTimeout(() => {
+                    alert("Berhasil terbit, Om!");
+                    location.reload();
+                }, 1500);
+            } catch (err) {
+                alert("Gagal kirim. Cek sinyal Om!");
+                btn.disabled = false;
+                btn.innerText = "POSTING SEKARANG";
+            }
+        }
+
+        // Tambahkan ini di baris paling atas bagian <script>
+        let globalKeluarga = []; 
+       
+        // 3. Pastikan muatDataLengkap memanggil cekIdentitas
+        async function muatDataLengkap() {
+            try {
+                const response = await fetch(URL_API);
+                const payload = await response.json();
+                
+                globalKeluarga = payload.keluarga || [];
+                
+                // JALANKAN CEK IDENTITAS DI SINI
+                cekIdentitas();
+
+                if (payload.ruangKeluarga) {
+                    renderRuangKeluarga(payload.ruangKeluarga, payload.komentar || []);
+                }
+            } catch (err) {
+                console.error("Gagal muat data:", err);
+            }
+        }
+
+        // Fungsi pembantu untuk cari foto berdasarkan Nama di Sheet1
+        function cariFotoProfil(nama) {
+            const orang = globalKeluarga.find(item => item.nama === nama);
+            // Kalau ketemu fotonya di Sheet1, pakai itu. Kalau kosong, pakai UI Avatars.
+            if (orang && orang.foto && orang.foto.startsWith('http')) {
+                return orang.foto;
+            }
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(nama)}&background=random`;
+        }
+
+        window.onload = muatDataLengkap;
+    </script>
+
+</body>
+</html>

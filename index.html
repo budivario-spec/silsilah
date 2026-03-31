@@ -278,14 +278,14 @@
                 <span class="menu-label">Lihat Silsilah</span>
             </div>
 
-            <div class="menu-card">
+            <div class="menu-card" onclick="window.location.href='ruang-keluarga.html'">
                 <span class="menu-icon">🏠</span>
                 <span class="menu-label">Ruang Keluarga</span>
             </div>
         </div>
 
         <div class="mt-8 mb-16 px-1"> <div class="flex justify-between items-center mb-4 px-1">
-                <h3 class="font-black text-gray-800 text-sm uppercase tracking-wider">Kabar & Promo</h3>
+                <h3 class="font-black text-gray-800 text-sm tracking-wider">Kabar & Promo</h3>
             </div>
 
             <div class="wadah-refleksi">
@@ -510,8 +510,8 @@
                         </div>
                         <div class="absolute top-2 right-2 px-2 py-1 rounded-lg shadow-lg text-[8px] font-bold uppercase tracking-wider">
                             ${isSponsor 
-                                ? '<span class="bg-green-600 text-white px-2 py-1 rounded-md">🟢 Sponsor (WA)</span>' 
-                                : '<span class="bg-blue-600 text-white px-2 py-1 rounded-md">📢 Berita</span>'}
+                                ? '<span class="bg-green-600 text-white px-2 py-1 rounded-md">Sponsor</span>' 
+                                : '<span class="bg-blue-600 text-white px-2 py-1 rounded-md">Berita</span>'}
                         </div>
                     </a>
                 </div>`;
@@ -543,18 +543,84 @@
             elemen.innerText = setGenerasi.size;
         }
 
-        // Eksekusi utama yang lebih aman
+        // --- LOGIKA IDENTITAS USER (TARUH DI DALAM TAG SCRIPT) ---
+
+        function cekIdentitas() {
+            const namaSaved = localStorage.getItem('userNama');
+            // Jika belum ada nama tersimpan, munculkan modal
+            if (!namaSaved) {
+                const modal = document.getElementById('modalLogin');
+                if (modal) modal.classList.replace('hidden', 'flex');
+            }
+        }
+
+        function simpanIdentitas() {
+            const input = document.getElementById('inputNamaUser');
+            const nama = input.value.trim();
+
+            if (!nama) {
+                alert("Nama diisi dulu ya!");
+                return;
+            }
+
+            // Ambil dataCloud dari localStorage untuk mencari foto
+            const dataLokalRaw = localStorage.getItem('dataCloud');
+            let fotoUser = "";
+
+            if (dataLokalRaw) {
+                const dataLokal = JSON.parse(dataLokalRaw);
+                // Cari nama di data keluarga (Sheet1)
+                const dataOrang = dataLokal.keluarga.find(o => o.nama.toLowerCase() === nama.toLowerCase());
+                
+                if (dataOrang && dataOrang.foto) {
+                    fotoUser = dataOrang.foto;
+                }
+            }
+
+            // Jika foto tidak ketemu, pakai avatar inisial
+            if (!fotoUser) {
+                fotoUser = `https://ui-avatars.com/api/?name=${encodeURIComponent(nama)}&background=00e5ff&color=fff`;
+            }
+
+            // Simpan ke memori HP
+            localStorage.setItem('userNama', nama);
+            localStorage.setItem('userFoto', fotoUser);
+
+            // Tutup modal dan refresh
+            alert("Salam kenal, " + nama + "!");
+            location.reload();
+        }
+
+        // Update fungsi window load Om untuk memanggil cekIdentitas
         window.addEventListener('load', () => {
-            // 1. Jalankan dashboard dari cache lokal SEGERA agar user tidak melihat angka 0
             perbaruiDashboardLokal(); 
             
-            // 2. Beri jeda 1 detik sebelum tarik data dari Cloud (mencegah Message Channel Closed)
+            // Panggil pengecekan identitas
+            cekIdentitas();
+
             setTimeout(async () => {
-                console.log("Sinkronisasi data cloud dimulai...");
                 await perbaruiDashboardCloud();
             }, 1000);
         });
     </script>
+
+    <div id="modalLogin" class="fixed inset-0 bg-black/80 z-[300] hidden items-center justify-center backdrop-blur-md p-6">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl text-center">
+            <div class="w-20 h-20 bg-[#00e5ff] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-cyan-200">
+                <i class="fas fa-user-friends text-white text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-black text-gray-800 mb-2">Selamat Datang!</h3>
+            <p class="text-sm text-gray-500 mb-6">Silakan masukkan nama lengkap.</p>
+            
+            <input type="text" id="inputNamaUser" 
+                class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 px-6 text-center font-bold text-gray-700 focus:outline-none focus:border-[#00e5ff] transition-all mb-4" 
+                placeholder="Contoh: Muntari">
+            
+            <button onclick="simpanIdentitas()" class="w-full bg-[#00e5ff] text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
+                MASUK
+            </button>
+        </div>
+    </div>
 
 </body>
 </html>
