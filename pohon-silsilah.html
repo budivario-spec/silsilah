@@ -312,11 +312,17 @@
         const zoom = d3.zoom()
             .scaleExtent([0.3, 3])
             .filter(event => {
-                // JANGAN aktifkan zoom jika yang ditekan adalah drag-handle
                 return !event.target.classList.contains('drag-handle') && !event.button;
             })
             .on("zoom", (event) => {
+                // D3 secara otomatis menghitung event.transform.x dan y 
+                // berdasarkan posisi kursor/jari saat pinch dilakukan.
                 content.style("transform", `translate3d(${event.transform.x}px, ${event.transform.y}px, 0) scale(${event.transform.k})`);
+                
+                // KUNCI: Biarkan transform-origin tetap di 0,0 (pojok kiri atas kanvas)
+                // karena D3 sudah menghitung kompensasi jarak (translate) agar 
+                // objek di bawah jari tetap terlihat diam.
+                content.style("transform-origin", "0 0"); 
             });
 
         // Aktifkan zoom hanya jika tidak sedang menggeser kartu (Sortable)
