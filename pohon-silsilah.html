@@ -591,54 +591,61 @@
 
             semuaListAnak.forEach(listEl => {
                 Sortable.create(listEl, {
-                    handle: ".drag-handle", // Titik 6 sebagai pemicu
+                    handle: ".drag-handle",
                     animation: 150,
-                    delay: 300,             // Tahan 0.3 detik saja untuk mulai geser
-                    delayOnTouchOnly: true, // Hanya berlaku di HP agar klik biasa tidak terganggu
-                    touchStartThreshold: 5, // Sensitivitas geseran jari
+                    delay: 300,
+                    delayOnTouchOnly: true,
+                    touchStartThreshold: 5,
                     
+                    // --- TAMBAHAN UNTUK HP ---
+                    forceFallback: true,        // Sangat penting agar onEnd terpanggil di browser HP
+                    fallbackTolerance: 3,      // Jari goyang sedikit tidak akan membatalkan drag
+                    scroll: true,              // Izinkan auto-scroll saat drag kartu ke ujung layar
+                    bubbleScroll: true,
+
                     onStart: function() {
-                        // MATIKAN ZOOM saat mulai drag agar layar tidak lari
+                        // Matikan fitur Zoom D3 agar tidak konflik saat jari menggeser kartu
                         container.on('.zoom', null);
-                        if (navigator.vibrate) navigator.vibrate(50); // Efek getar biar mantap
-                        document.body.style.overflow = 'hidden';    // Kunci scroll body
+                        
+                        if (navigator.vibrate) navigator.vibrate(50); 
+                        document.body.classList.add('sorting-active');
+                        document.body.style.overflow = 'hidden'; 
                     },
                     
-                    onEnd: function() {
+                    onEnd: function(evt) {
                         // 1. Aktifkan kembali Zoom D3
                         container.call(zoom);
-                        // 2. Hapus penanda di Body
+                        
+                        // 2. Bersihkan styling
                         document.body.classList.remove('sorting-active');
                         document.body.style.overflow = '';
 
-                        // 3. FIX MOUSE NYANGKUT: Kirim event mouseup buatan ke seluruh dokumen
-                        const mouseUpEvent = new MouseEvent('mouseup', {
-                            bubbles: true,
-                            cancelable: true,
-                            view: window
-                        });
-                        window.dispatchEvent(mouseUpEvent);
-
-                        // 4. Bersihkan sisa-sisa seleksi teks jika ada
-                        window.getSelection().removeAllRanges();
-
-                        simpanUrutanBaru(listEl);
+                        // 3. Ambil urutan baru setelah DOM stabil
+                        setTimeout(() => {
+                            const listEl = evt.to; 
+                            simpanUrutanBaru(listEl);
+                            window.getSelection().removeAllRanges();
+                        }, 100); // Jeda sedikit lebih lama (100ms) untuk stabilitas HP
                     }
                 });
             });
         }
 
         function simpanUrutanBaru(kontainer) {
-            // Ambil data dari key yang benar: 'dataCloud'
+            if (!kontainer) return;
+
             let dataFull = JSON.parse(localStorage.getItem('dataCloud')) || { keluarga: [] };
             let daftarKeluarga = dataFull.keluarga;
 
-            const semuaKartuDiSini = kontainer.querySelectorAll(':scope > .kartu-anak');
+            // Ambil semua li (tree-item) yang merupakan anak langsung dari ul (kontainer)
+            const semuaItemDiSini = kontainer.querySelectorAll(':scope > .tree-item');
             
             let urutanBerubah = false;
 
-            semuaKartuDiSini.forEach((kartu, index) => {
-                const idAnak = kartu.getAttribute('data-id');
+            semuaItemDiSini.forEach((item, index) => {
+                const idAnak = item.getAttribute('data-id');
+                if (!idAnak) return;
+
                 const orang = daftarKeluarga.find(a => a.id.toString() === idAnak.toString());
                 
                 if (orang) {
@@ -646,15 +653,13 @@
                     if (orang.anakKe !== urutanBaru) {
                         orang.anakKe = urutanBaru;
                         urutanBerubah = true;
+                        console.log(`Update: ${orang.nama} sekarang urutan ke-${urutanBaru}`);
                     }
                 }
             });
 
             if (urutanBerubah) {
-                // Simpan ke Local Storage agar saat refresh tetap di posisi baru
                 localStorage.setItem('dataCloud', JSON.stringify(dataFull));
-                
-                // Kirim ke Google Sheets agar permanen
                 kirimUpdateKeCloud(daftarKeluarga); 
             }
         }// <--- Penutup fungsi simpanUrutanBaru
