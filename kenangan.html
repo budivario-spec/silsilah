@@ -125,73 +125,97 @@
     </div>
 
     <script>
+        // 1. Fungsi Sinkronisasi (Tarik data jika lokal kosong)
+        async function sinkronisasiDataCloud() {
+            try {
+                console.log("Menarik data kenangan dari Cloud...");
+                const response = await fetch(URL_API + "?t=" + Date.now());
+                const resJson = await response.json();
+                
+                if (resJson && resJson.keluarga) {
+                    localStorage.setItem('dataCloud', JSON.stringify(resJson));
+                    return resJson;
+                }
+            } catch (err) {
+                console.error("Gagal sinkronisasi:", err);
+            }
+            return null;
+        }
+
+        // 2. Fungsi Utama Load Data
         async function loadKenangan() {
             const container = document.getElementById('listKenangan');
-            const dataLokalRaw = localStorage.getItem('dataCloud');
-            const dataLokal = dataLokalRaw ? JSON.parse(dataLokalRaw) : { keluarga: [] };
+            let dataLokalRaw = localStorage.getItem('dataCloud');
+            let dataLokal = dataLokalRaw ? JSON.parse(dataLokalRaw) : { keluarga: [] };
 
-            // 1. FILTER: Cari yang statusnya Wafat atau namanya ada (Alm.)
+            // JIKA DATA KOSONG, TARIK DARI CLOUD
+            if (dataLokal.keluarga.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 text-sm mt-10 animate-pulse">Menghubungkan ke Cloud...</p>';
+                const hasilSinkron = await sinkronisasiDataCloud();
+                if (hasilSinkron) {
+                    dataLokal = hasilSinkron;
+                }
+            }
+
+            // 3. FILTER: Cari yang wafat
             let wafat = dataLokal.keluarga.filter(person => {
                 const nama = (person.nama || "").toLowerCase();
                 const status = (person.status || "").toLowerCase();
-                return status === "meninggal" || status === "wafat" || nama.includes("(alm.)") || nama.includes("(almh.)");
+                // Cek status meninggal atau adanya label (Alm.) di nama
+                return status === "meninggal" || status === "wafat" || status === "mati" || nama.includes("(alm") || nama.includes("alm.");
             });
 
             if (wafat.length === 0) {
-                container.innerHTML = '<div class="text-center mt-20 text-gray-400 text-sm">Belum ada data keluarga wafat.</div>';
+                container.innerHTML = `
+                    <div class="text-center mt-20">
+                        <div class="text-4xl mb-4">📖</div>
+                        <p class="text-gray-400 text-sm">Data keluarga yang wafat belum tersedia atau belum ditandai.</p>
+                    </div>`;
                 return;
             }
 
-            // 2. URUTKAN BERDASARKAN NAMA (A ke Z)
-            wafat.sort((a, b) => {
-                const namaA = (a.nama || "").toLowerCase();
-                const namaB = (b.nama || "").toLowerCase();
-                return namaA.localeCompare(namaB);
-            });
+            // 4. URUTKAN: Nama A ke Z
+            wafat.sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
 
+            // 5. RENDER HTML
             let html = '';
             wafat.forEach(person => {
                 const namaLengkap = person.nama || "";
                 let namaBersih = namaLengkap;
                 let sebutan = "";
 
-                // Logika Deteksi (Alm.) / (Almh.)
-                if (namaLengkap.includes("(Almh.)")) {
-                    namaBersih = namaLengkap.replace("(Almh.)", "").trim();
-                    sebutan = '<span class="text-pink-700/50 text-[10px] ml-1 font-normal">(Almh.)</span>';
-                } else if (namaLengkap.includes("(Alm.)")) {
-                    namaBersih = namaLengkap.replace("(Alm.)", "").trim();
-                    sebutan = '<span class="text-blue-700/50 text-[10px] ml-1 font-normal">(Alm.)</span>';
+                // Deteksi Alm/Almh untuk pewarnaan label yang lebih halus
+                if (namaLengkap.toLowerCase().includes("(almh.)")) {
+                    namaBersih = namaLengkap.replace(/\(Almh\.\)/gi, "").trim();
+                    sebutan = '<span class="text-pink-800/40 text-[10px] ml-1 font-normal uppercase">(Almh.)</span>';
+                } else if (namaLengkap.toLowerCase().includes("(alm.)")) {
+                    namaBersih = namaLengkap.replace(/\(Alm\.\)/gi, "").trim();
+                    sebutan = '<span class="text-blue-800/40 text-[10px] ml-1 font-normal uppercase">(Alm.)</span>';
                 }
 
-                // --- SOLUSI FOTO (Disesuaikan dengan Apps Script Om) ---
-                // Apps Script Om mengirim data dengan key "foto"
+                // Logika Foto
                 const fotoUrl = person.foto; 
-                
                 let mediaHtml = '';
-                // Cek apakah link foto valid (berisi teks base64 atau link http)
-                if (fotoUrl && fotoUrl.length > 20) {
-                    mediaHtml = `<img src="${fotoUrl}" alt="${namaBersih}" class="kenangan-photo" onerror="this.src='https://via.placeholder.com/60?text=No+Img';">`;
+                if (fotoUrl && fotoUrl.length > 20 && !fotoUrl.includes('127.0.0.1')) {
+                    mediaHtml = `<img src="${fotoUrl}" alt="${namaBersih}" class="kenangan-photo" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(namaBersih)}&background=f3f4f6&color=d1d5db';">`;
                 } else {
-                    // Jika kosong, tampilkan siluet masjid
                     mediaHtml = `<div class="siluet-placeholder">🕌</div>`;
                 }
 
-                // Ambil data lain dari sheet Om
                 const tgl = person.tanggalWafat || "-";
                 const makam = person.lokasiMakam || "Tidak tercatat";
                 
                 html += `
-                <div class="card-kenangan">
+                <div class="card-kenangan shadow-sm">
                     <div class="kenangan-info">
                         <h3 class="nama-almarhum">${namaBersih} ${sebutan}</h3>
                         <div class="mt-2 space-y-1">
                             <div class="info-row">
-                                <span class="icon-small">📅</span> 
+                                <span class="icon-small text-red-900">📅</span> 
                                 <span>Wafat: <b class="text-gray-700">${tgl}</b></span>
                             </div>
                             <div class="info-row italic">
-                                <span class="icon-small">📍</span> 
+                                <span class="icon-small text-red-900">📍</span> 
                                 <span>Makam: ${makam}</span>
                             </div>
                         </div>

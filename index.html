@@ -302,13 +302,14 @@
     <script>
         // Update fungsi window load Om untuk memanggil cekIdentitas
         window.addEventListener('load', () => {
-            // Cek identitas setelah tampilan awal muncul
+            // 1. Cek identitas user
             cekIdentitas();
 
-            // Baru ambil data terbaru dari internet setelah 1 detik
-            setTimeout(async () => {
-                await perbaruiDashboardCloud();
-            }, 1000);
+            // 2. Langsung coba muat dari lokal (biar tidak 0 kalau data masih ada)
+            perbaruiDashboardLokal();
+
+            // 3. Segera ambil data terbaru dari internet tanpa delay setTimeout yang lama
+            perbaruiDashboardCloud();
         });
         
         // MODIFIKASI DISINI: Variabel untuk menyimpan instance swiper
@@ -418,34 +419,35 @@
         }
 
         // FUNGSI 1: Ambil dari HP (Cepat & Offline)
-        function perbaruiDashboardLokal() {
+       function perbaruiDashboardLokal() {
             const elJumlah = document.getElementById('angkaJumlah');
             const elGen = document.getElementById('angkaTotalGenerasi');
             const containerIklan = document.getElementById('containerIklanCloud');
-            const elHidup = document.getElementById('jumlahHidup');
-            const elWafat = document.getElementById('jumlahWafat');
 
             const dataLokalRaw = localStorage.getItem('dataCloud');
+            
             if (dataLokalRaw) {
                 const dataLokal = JSON.parse(dataLokalRaw);
-                // Update angka-angka
                 const stats = hitungStatusSederhana(dataLokal.keluarga);
+                
                 if (elJumlah) elJumlah.innerText = stats.total;
-                if (elHidup) elHidup.innerText = stats.hidup;
-                if (elWafat) elWafat.innerText = stats.wafat;
+                if (document.getElementById('jumlahHidup')) document.getElementById('jumlahHidup').innerText = stats.hidup;
+                if (document.getElementById('jumlahWafat')) document.getElementById('jumlahWafat').innerText = stats.wafat;
                 if (elGen) updateAngkaGenerasi(dataLokal.keluarga, elGen);
                 if (containerIklan) renderIklan(dataLokal.iklan || [], containerIklan);
-
-                console.log("Beranda: Data dimuat dari memori HP (Instan)");
+            } else {
+                // JIKA KOSONG (Setelah Clear Cache), beri tanda sedang loading
+                if (elJumlah) elJumlah.innerText = "...";
+                if (elGen) elGen.innerText = "...";
+                if (containerIklan) containerIklan.innerHTML = `<div class="p-10 text-center w-full">Memuat data...</div>`;
             }
         }
 
         // FUNGSI 2: Ambil dari Internet (Update Data Terbaru)
         async function perbaruiDashboardCloud() {
             try {
-                // Gunakan timeout pada fetch agar tidak menggantung selamanya
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik max
+                const timeoutId = setTimeout(() => controller.abort(), 8000); // Persingkat jadi 8 detik
 
                 const response = await fetch(URL_API + "?t=" + Date.now(), { signal: controller.signal });
                 clearTimeout(timeoutId);
@@ -453,17 +455,21 @@
                 const resJson = await response.json();
                 
                 if (resJson && resJson.keluarga) {
-                    // Cek notifikasi dulu
-                    try { cekNotifikasiBaru(resJson); } catch (e) {}
-
-                    // Simpan ke HP
+                    // Simpan ke HP agar kunjungan berikutnya instan
                     localStorage.setItem('dataCloud', JSON.stringify(resJson));
                     
-                    // Update tampilan lagi dengan data terbaru
+                    // Langsung update tampilan
                     perbaruiDashboardLokal();
+                    
+                    // Cek notifikasi
+                    try { cekNotifikasiBaru(resJson); } catch (e) {}
                 }
             } catch (err) {
-                console.warn("Gagal sinkron cloud (mungkin offline):", err.message);
+                console.warn("Koneksi lambat atau offline:", err.message);
+                // Jika gagal dan data lokal kosong, beri pesan error di UI
+                if (!localStorage.getItem('dataCloud')) {
+                    document.getElementById('angkaJumlah').innerText = "!";
+                }
             }
         }
 
