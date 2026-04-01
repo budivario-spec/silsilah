@@ -127,6 +127,21 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
             border: 2px solid #e2e8f0; /* Tebalkan sedikit agar perubahan warna terlihat */
             transition: all 0.3s ease;
+
+            -webkit-user-select: none;   /* Matikan seleksi teks Chrome/Safari */
+            -moz-user-select: none;      /* Firefox */
+            -ms-user-select: none;       /* IE/Edge */
+            user-select: none;           /* Standar */
+            
+            -webkit-touch-callout: none; /* Matikan menu 'copy/share' di HP saat tekan lama */
+            -webkit-tap-highlight-color: transparent; /* Hilangkan kotak abu-abu saat kartu diklik */
+            touch-action: pan-x pan-y;   /* Biarkan scroll tetap jalan, tapi matikan gesture sistem lain */
+        }
+
+        /* Efek saat kartu sedang ditekan (menunggu 5 detik) */
+        .member-node:active {
+            background-color: #fff9c4 !important; /* Kuning soft */
+            transition: background-color 5s linear; /* Warna berubah pelan selama 5 detik */
         }
 
         /* Efek saat kartu ditekan lama tapi belum bisa geser (0-5 detik) */
@@ -484,6 +499,7 @@
             const semuaListAnak = document.querySelectorAll('.list-anak');
 
             semuaListAnak.forEach(listEl => {
+                listEl.addEventListener('contextmenu', e => e.preventDefault());
                 Sortable.create(listEl, {
                     animation: 150,
                     delay: 5000,          // Kunci 5 detik (5000ms)
