@@ -290,23 +290,29 @@
                 document.getElementById('tempatLahir').value = data.tempatLahir || "";
                 document.getElementById('tanggalLahir').value = data.tanggalLahir || "";
                 
+                // ISI STATUS (Pasangan/Anak/None)
                 statusSelect.value = data.status || "none";
-                groupRelasi.classList.toggle('hidden', data.status !== 'anak');
+                
+                // PAKSA JALANKAN LOGIKA TAMPIL/SEMBUNYI
+                groupRelasi.classList.toggle('hidden', statusSelect.value !== 'anak');
 
-                // Set ID Hidden
+                // SET ID KE HIDDEN INPUT
                 document.getElementById('parentID').value = data.parentID || "";
                 document.getElementById('idPasangan').value = data.idPasangan || "";
 
-                // Set Nama di Input Pencarian (Cari berdasarkan ID)
+                // CARI NAMA ORANG TUA (berdasarkan parentID)
                 if (data.parentID) {
                     const ortu = dataFull.keluarga.find(o => o.id == data.parentID);
                     if (ortu) document.getElementById('inputCariParent').value = ortu.nama;
                 }
+
+                // CARI NAMA PASANGAN (berdasarkan idPasangan)
                 if (data.idPasangan) {
                     const pasangan = dataFull.keluarga.find(o => o.id == data.idPasangan);
                     if (pasangan) document.getElementById('inputCariPasangan').value = pasangan.nama;
                 }
 
+                // TAMPILKAN FOTO
                 if (data.foto && data.foto.startsWith('data:image')) {
                     previewImage.src = data.foto;
                     previewImage.classList.remove('hidden');
