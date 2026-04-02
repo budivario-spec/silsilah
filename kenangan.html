@@ -15,7 +15,22 @@
     <script src="config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #fcfcfc; font-family: sans-serif; margin: 0; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100vh; /* Pastikan tinggi minimal selayar penuh */
+            overflow-x: hidden; /* Cegah goyang ke samping */
+            overflow-y: auto;   /* Paksa scroll vertikal aktif */
+            position: relative;
+            -webkit-overflow-scrolling: touch; /* Scroll halus di iOS */
+            touch-action: pan-y; /* KUNCINYA: Memberitahu browser agar fokus ke scroll atas-bawah */
+        }
+
+        body { 
+            background-color: #fcfcfc; 
+            font-family: sans-serif; 
+        }
         
         /* Header Merah Marun Khidmat */
         .header-curve {
