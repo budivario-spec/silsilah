@@ -97,6 +97,16 @@
         .sortable-drag {
             opacity: 0;
         }
+
+        /* Efek highlight saat nama ditemukan */
+        .search-highlight-green {
+            background-color: #f0fff4 !important; /* Hijau sangat muda */
+            border: 3px solid #22c55e !important; /* Hijau emerald */
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
+            transform: scale(1.15);
+            z-index: 100;
+        }
+        
         .viewport:active { cursor: grabbing; }
 
         .tree-canvas {
@@ -272,6 +282,24 @@
         img {
             -webkit-user-drag: none;
         }
+
+        .search-container {
+            margin-top: 20px;
+            padding: 0 24px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #00e5ff;
+        }
     </style>
 </head>
 
@@ -287,6 +315,12 @@
     <div class="header-curve">
         <button onclick="window.location.href='index.html'" class="btn-back">←</button>
         <h1 class="text-xl font-bold">Eksplorasi Silsilah</h1>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Cari nama anggota keluarga..." class="search-input"
+            class="w-full px-4 py-2 rounded-full text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 shadow-inner">
+        <div id="searchResultCount" class="absolute right-8 top-2 text-xs text-gray-400 font-bold"></div>
     </div>
 
     <div id="scrollContainer" class="viewport">
@@ -430,8 +464,31 @@
                 renderPohon(); 
             }
         }
-
         
+        function fokusKeAkar(id) {
+            const targetNode = document.getElementById(`node-${id}`);
+            if (!targetNode) return;
+
+            const containerBounds = container.node().getBoundingClientRect();
+            
+            // Ambil lebar asli kartu (biasanya sekitar 300px - 400px tergantung isi)
+            const nodeWidth = targetNode.offsetWidth;
+
+            // KUNCI PENGATURAN:
+            // Angka 0.8 adalah level zoom (k).
+            const k = 0.8; 
+            
+            // Rumus: (Tengah Layar) - (Posisi Kartu dari Kiri * Zoom) - (Setengah Lebar Kartu * Zoom)
+            // Jika ingin kartu LEBIH KE KANAN lagi, kurangi angka di belakang (misal dikurangi 100)
+            const x = (containerBounds.width / 2) - (targetNode.offsetLeft * k) - ((nodeWidth / 2) * k);
+            
+            const y = 10; // Jarak dari atas (atur sesuai selera)
+
+            container.transition().duration(1000).call(
+                zoom.transform, 
+                d3.zoomIdentity.translate(x, y).scale(k)
+            );
+        }
 
         function renderPohon() {
             const daftar = getDaftarKeluarga(); 
@@ -442,9 +499,6 @@
                 return;
             }
             
-            // PERBAIKAN LOGIKA DISINI:
-            // Akar adalah yang tidak punya parentID DAN statusnya bukan 'pasangan'
-            // Jadi menantu (Ramelan) tidak akan pernah jadi akar meskipun parentID-nya kosong.
             const akarKeluarga = daftar.filter(a => {
                 const gapunyaOrangTua = (a.parentID === 'none' || a.parentID === '' || !a.parentID);
                 const bukanPasangan = (a.status !== 'pasangan');
@@ -460,6 +514,13 @@
             
             aktifkanFiturGeser();  
             sembunyikanLoading();
+
+            // --- TAMBAHAN: Paskan posisi tengah saat pertama buka ---
+            if (akarKeluarga.length > 0) {
+                setTimeout(() => {
+                    fokusKeAkar(akarKeluarga[0].id);
+                }, 600); // Beri jeda sedikit agar DOM stabil
+            }
         }
 
         // Tambahkan ini di bawah fungsi renderPohon
@@ -663,6 +724,71 @@
                 kirimUpdateKeCloud(daftarKeluarga); 
             }
         }// <--- Penutup fungsi simpanUrutanBaru
+
+        // --- LOGIKA PENCARIAN ---
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            const keyword = e.target.value.toLowerCase();
+            
+            if (keyword.length < 2) {
+                document.getElementById('searchResultCount').innerText = "";
+                return;
+            }
+
+            // Debounce agar tidak berat saat mengetik
+            searchTimeout = setTimeout(() => {
+                const semuaOrang = getDaftarKeluarga();
+                const hasil = semuaOrang.filter(o => o.nama.toLowerCase().includes(keyword));
+                
+                document.getElementById('searchResultCount').innerText = hasil.length > 0 ? `${hasil.length}` : "0";
+
+                if (hasil.length === 1) {
+                    temukanDanFokus(hasil[0].id);
+                }
+            }, 500);
+        });
+
+        function temukanDanFokus(id) {
+            const targetNode = document.getElementById(`node-${id}`);
+            if (!targetNode) return;
+
+            // 1. Buka semua folder silsilah di atasnya agar jalur terlihat
+            let parent = targetNode.closest('.list-anak');
+            while (parent) {
+                parent.classList.remove('hidden-children');
+                const parentId = parent.id.replace('children-', '');
+                const indicator = document.getElementById(`indicator-${parentId}`);
+                if (indicator) indicator.innerText = "▼";
+                parent = parent.parentElement.closest('.list-anak');
+            }
+
+            // 2. Beri efek pendar HIJAU
+            targetNode.classList.add('search-highlight-green');
+            setTimeout(() => targetNode.classList.remove('search-highlight-green'), 5000);
+
+            // 3. LOGIKA PUSAT LAYAR (Center Viewport)
+            const containerBounds = container.node().getBoundingClientRect();
+            
+            // Tentukan level zoom (0.8 agar kartu tidak terlalu memenuhi layar)
+            const k = 0.8;
+
+            // RUMUS MATEMATIKA UNTUK TITIK TENGAH SEMPURNA:
+            // (Setengah Lebar Layar) - (Posisi Kiri Kartu * Zoom) - (Setengah Lebar Kartu * Zoom)
+            const x = (containerBounds.width / 2) - (targetNode.offsetLeft * k) - ((targetNode.offsetWidth / 2) * k);
+            
+            // (Setengah Tinggi Layar) - (Posisi Atas Kartu * Zoom) - (Setengah Tinggi Kartu * Zoom)
+            const y = (containerBounds.height / 2) - (targetNode.offsetTop * k) - ((targetNode.offsetHeight / 2) * k);
+
+            // 4. JALANKAN TRANSISI
+            container.transition()
+                .duration(1000)
+                .ease(d3.easeCubicInOut)
+                .call(
+                    zoom.transform, 
+                    d3.zoomIdentity.translate(x, y).scale(k)
+                );
+        }
 
         // Gunakan ini untuk memastikan halaman benar-benar siap
         window.addEventListener('DOMContentLoaded', () => {

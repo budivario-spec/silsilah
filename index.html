@@ -49,14 +49,13 @@
         body { 
             background-color: #f8f9fa; 
             font-family: sans-serif; 
-            margin: 0;
-            padding: 0;
-            /* Pastikan scroll aktif */
-            overflow-x: hidden;
-            overflow-y: auto; 
-            height: auto;
-            min-height: 100vh;
             -webkit-overflow-scrolling: touch; /* Scroll halus di iPhone */
+        }
+
+        /* Tambahkan ini untuk memastikan body tidak melar */
+        html, body {
+            max-width: 100%;
+            overflow-x: hidden;
         }
 
         /* Jaring Pengaman Grid 3 Kolom */
@@ -189,7 +188,7 @@
         .swiper-pagination {
             position: relative !important;
             bottom: 5px !important; /* Angkat sedikit mendekat ke refleksi */
-            margin-top: -35px;
+            margin-top: -50px; /* Tarik ke atas agar tidak terlalu jauh dari slider, tapi masih punya ruang untuk refleksi */
         }
 
         .swiper-slide {
@@ -226,11 +225,13 @@
 <body>
 
     <div class="header-curve">
-        <h1 class="text-xl font-bold mt-4">Beranda</h1>
+        <h1 class="text-xl font-bold mt-4">Bani Muntari</h1>
     </div>
 
     <div class="px-6">
-        <h3 class="text-lg font-bold my-4">Silsilah Bani Muntari</h2>
+        <h3 id="sapaanUser" class="text-lg font-bold my-4 text-gray-800">
+            Memuat...
+        </h3>
         
         <div id="menu-utama" class="grid grid-cols-3 gap-3">
             
@@ -295,7 +296,8 @@
             </div>
         </div>
 
-        <div class="mt-8 mb-16 px-1"> <div class="flex justify-between items-center mb-4 px-1">
+        <div class="mt-8 mb-16 px-1"> 
+            <div class="flex justify-between items-center mb-4 px-1">
                 <h3 class="font-black text-gray-800 text-sm tracking-wider">Kabar & Promo</h3>
             </div>
 
@@ -313,20 +315,44 @@
     <script>
         // Update fungsi window load Om untuk memanggil cekIdentitas
         window.addEventListener('load', () => {
-            // Memastikan overflow body kembali normal saat loading
-            document.body.style.overflow = 'auto';
-            // 1. Cek identitas user
+            // 1. Cek identitas dulu
             cekIdentitas();
 
-            // 2. Langsung coba muat dari lokal (biar tidak 0 kalau data masih ada)
-            perbaruiDashboardLokal();
+            // 2. Tampilkan sapaan di Beranda
+            tampilkanSapaan(); 
 
-            // 3. Segera ambil data terbaru dari internet tanpa delay setTimeout yang lama
-            perbaruiDashboardCloud();
+            // 3. Hanya ambil data jika user sudah terdaftar
+            if (localStorage.getItem('userNama')) {
+                document.body.style.overflow = 'auto';
+                perbaruiDashboardLokal();
+                perbaruiDashboardCloud();
+            }
+            if (document.body.scrollHeight <= window.innerHeight) {
+                document.body.style.overflowY = 'hidden';
+            } else {
+                document.body.style.overflowY = 'auto';
+            }
         });
         
         // MODIFIKASI DISINI: Variabel untuk menyimpan instance swiper
         let swiperInstance;
+
+        function tampilkanSapaan() {
+            const namaSaved = localStorage.getItem('userNama');
+            const elSapaan = document.getElementById('sapaanUser');
+            
+            if (namaSaved && elSapaan) {
+                const jam = new Date().getHours();
+                let waktu = "Selamat Datang";
+                
+                if (jam < 11) waktu = "Selamat Pagi";
+                else if (jam < 15) waktu = "Selamat Siang";
+                else if (jam < 18) waktu = "Selamat Sore";
+                else waktu = "Selamat Malam";
+
+                elSapaan.innerHTML = `${waktu}, <span class="text-[#00acc1]">${namaSaved}</span>!`;
+            }
+        }
 
         // MODIFIKASI DISINI: Fungsi inisialisasi tunggal dengan spek 'smooth' yang Om mau
         function inisialisasiSwiper() {
@@ -432,7 +458,7 @@
         }
 
         // FUNGSI 1: Ambil dari HP (Cepat & Offline)
-       function perbaruiDashboardLokal() {
+        function perbaruiDashboardLokal() {
             const elJumlah = document.getElementById('angkaJumlah');
             const elGen = document.getElementById('angkaTotalGenerasi');
             const containerIklan = document.getElementById('containerIklanCloud');
@@ -458,9 +484,12 @@
 
         // FUNGSI 2: Ambil dari Internet (Update Data Terbaru)
         async function perbaruiDashboardCloud() {
+            // JANGAN UPDATE TAMPILAN KALAU BELUM LOGIN
+            if (!localStorage.getItem('userNama')) return; 
+
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000); // Persingkat jadi 8 detik
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
 
                 const response = await fetch(URL_API + "?t=" + Date.now(), { signal: controller.signal });
                 clearTimeout(timeoutId);
@@ -468,21 +497,12 @@
                 const resJson = await response.json();
                 
                 if (resJson && resJson.keluarga) {
-                    // Simpan ke HP agar kunjungan berikutnya instan
                     localStorage.setItem('dataCloud', JSON.stringify(resJson));
-                    
-                    // Langsung update tampilan
                     perbaruiDashboardLokal();
-                    
-                    // Cek notifikasi
                     try { cekNotifikasiBaru(resJson); } catch (e) {}
                 }
             } catch (err) {
-                console.warn("Koneksi lambat atau offline:", err.message);
-                // Jika gagal dan data lokal kosong, beri pesan error di UI
-                if (!localStorage.getItem('dataCloud')) {
-                    document.getElementById('angkaJumlah').innerText = "!";
-                }
+                console.warn("Koneksi lambat atau offline");
             }
         }
 
@@ -578,19 +598,33 @@
 
         function cekIdentitas() {
             const namaSaved = localStorage.getItem('userNama');
-            // Jika belum ada nama tersimpan, munculkan modal
             if (!namaSaved) {
                 const modal = document.getElementById('modalLogin');
-                if (modal) modal.classList.replace('hidden', 'flex');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    // Kunci layar agar tidak bisa di-scroll saat modal muncul
+                    document.body.style.overflow = 'hidden';
+                    
+                    // Kasih jeda sedikit (100ms-300ms) agar modal muncul dulu baru panggil keyboard
+                    setTimeout(() => {
+                        if (input) {
+                            input.focus(); 
+                            input.click(); // Beberapa browser TV butuh simulasi klik
+                        }
+                    }, 500);
+                }
             }
         }
 
         function simpanIdentitas() {
             const input = document.getElementById('inputNamaUser');
-            const nama = input.value.trim();
+            input.blur();
 
-            if (!nama) {
-                alert("Nama diisi dulu ya!");
+            let namaRaw = input.value.trim().toLowerCase();
+            const nama = namaRaw.replace(/\b\w/g, l => l.toUpperCase());
+            if (nama.length < 3) {
+                alert("Nama diisi yang lengkap ya, minimal 3 huruf!");
                 return;
             }
 
@@ -630,7 +664,7 @@
         
     </script>
 
-    <div id="modalLogin" class="fixed inset-0 bg-black/80 z-[300] hidden items-center justify-center backdrop-blur-md p-6">
+    <div id="modalLogin" role="dialog" aria-label="Identitas Pengguna" class="fixed inset-0 bg-black/80 z-[9999] hidden items-center justify-center backdrop-blur-md p-6">
         <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl text-center">
             <div class="w-20 h-20 bg-[#00e5ff] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-cyan-200">
                 <i class="fas fa-user-friends text-white text-3xl"></i>
@@ -638,9 +672,11 @@
             <h3 class="text-xl font-black text-gray-800 mb-2">Selamat Datang!</h3>
             <p class="text-sm text-gray-500 mb-6">Silakan masukkan nama lengkap.</p>
             
-            <input type="text" id="inputNamaUser" 
-                class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 px-6 text-center font-bold text-gray-700 focus:outline-none focus:border-[#00e5ff] transition-all mb-4" 
-                placeholder="Contoh: Muntari">
+            <input type="text" id="inputNamaUser" autofocus
+                class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 px-6 text-center font-bold text-gray-700 focus:outline-none focus:border-[#00e5ff] transition-all mb-4 capitalize" 
+                placeholder="Contoh: Muntari"
+                autocomplete="off"
+                spellcheck="false">
             
             <button onclick="simpanIdentitas()" class="w-full bg-[#00e5ff] text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
                 MASUK
