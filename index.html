@@ -567,6 +567,18 @@
             return { total: data.length, hidup, wafat };
         }
 
+        // Modifikasi fungsi tandaiSudahDilihat agar lebih cerdas
+        function tandaiSudahDilihat(tipe) {
+            const dataCloud = JSON.parse(localStorage.getItem('dataCloud'));
+            let lastCount = JSON.parse(localStorage.getItem('last_count')) || { keluarga: 0, iklan: 0 };
+            
+            if (dataCloud) {
+                if (tipe === 'keluarga') lastCount.keluarga = dataCloud.keluarga.length;
+                if (tipe === 'iklan') lastCount.iklan = dataCloud.iklan.length;
+                localStorage.setItem('last_count', JSON.stringify(lastCount));
+            }
+        }
+
         function renderIklan(daftar, container) {
             const iklanAktif = daftar.filter(item => item.status === "Aktif");
             if (!iklanAktif.length) {
