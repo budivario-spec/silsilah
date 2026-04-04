@@ -189,27 +189,15 @@
 
         // 5. Fitur Cari
         function filterAnggota() {
-            const input = document.getElementById('searchInput').value.trim().toLowerCase();
-            const dataLengkap = getDaftarDariStorage();
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const daftarKeluarga = getDaftarDariStorage();
             
-            // 1. Jika kolom input kosong, tampilkan semua data
-            if (input === "") {
-                renderData(dataLengkap, false);
-                return;
-            }
+            const hasilFilter = daftarKeluarga.filter(anggota => 
+                anggota.nama.toLowerCase().includes(input) || 
+                (anggota.domisili && anggota.domisili.toLowerCase().includes(input))
+            );
 
-            // 2. Filter dengan pembersihan data (null check & trim)
-            const hasilFilter = dataLengkap.filter(anggota => {
-                // Pastikan nama ada dan bersihkan spasi berlebih
-                const nama = anggota.nama ? anggota.nama.toLowerCase().trim() : "";
-                const domisili = anggota.domisili ? anggota.domisili.toLowerCase().trim() : "";
-                
-                // Cek apakah input ada di dalam nama atau domisili
-                return nama.includes(input) || domisili.includes(input);
-            });
-
-            // 3. Render hasil (kirim parameter true karena sedang mencari)
-            renderData(hasilFilter, true);
+            renderData(hasilFilter);
         }
 
         // Jalankan saat halaman dibuka

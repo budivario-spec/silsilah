@@ -383,15 +383,13 @@
 
             if (!input || !listSaran) return;
 
-            // Gunakan event 'input' agar terpantau SETIAP KETIKAN
             input.addEventListener('input', function() {
                 const teks = this.value.trim().toLowerCase();
                 listSaran.innerHTML = '';
                 
-                // Minimal 2 huruf baru muncul saran
                 if (teks.length < 2) {
                     listSaran.classList.add('hidden');
-                    resetAvatarIcon();
+                    resetAvatarIcon(); // Kembali ke ikon user-friends jika dihapus
                     return;
                 }
 
@@ -400,17 +398,16 @@
 
                 try {
                     const dataLokal = JSON.parse(dataLokalRaw);
-                    // Filter nama yang mengandung teks ketikan user
                     const matches = dataLokal.keluarga.filter(p => 
                         p.nama && p.nama.toLowerCase().includes(teks)
-                    ).slice(0, 5); // Ambil 5 teratas saja
+                    ).slice(0, 5);
 
                     if (matches.length > 0) {
                         matches.forEach(p => {
                             const item = document.createElement('div');
                             item.className = "p-4 border-b border-gray-50 hover:bg-cyan-50 active:bg-cyan-100 cursor-pointer flex items-center gap-3 text-left transition-colors";
                             
-                            // Logika foto: Jika tidak ada, pakai UI-Avatars
+                            // Logika foto: Pakai foto asli atau UI-Avatars
                             const imgUrl = (p.foto && p.foto.length > 20) ? p.foto : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nama)}&background=00e5ff&color=fff`;
                             
                             item.innerHTML = `
@@ -421,14 +418,18 @@
                                 </div>
                             `;
                             
-                            // Saat saran di-klik
+                            // AKSI SAAT NAMA DIKLIK
                             item.onclick = () => {
-                                input.value = p.nama;
+                                input.value = p.nama; // Isi input dengan nama lengkap
                                 listSaran.classList.add('hidden');
-                                // Ganti foto di lingkaran modal secara real-time
+                                
+                                // TAMPILKAN FOTO DI AVATAR MODAL
                                 if (containerAvatar) {
                                     containerAvatar.innerHTML = `<img src="${imgUrl}" class="w-full h-full object-cover rounded-full border-2 border-white shadow-md">`;
                                 }
+                                
+                                // Simpan sementara URL foto untuk simpanIdentitas nanti
+                                input.dataset.selectedFoto = imgUrl; 
                             };
                             listSaran.appendChild(item);
                         });
@@ -436,12 +437,19 @@
                     } else {
                         listSaran.classList.add('hidden');
                     }
+
+                    // Tambahan: Jika user ngetik nama lengkap persis tanpa klik saran, update foto juga
+                    const exactMatch = dataLokal.keluarga.find(o => o.nama.toLowerCase() === teks);
+                    if (exactMatch) {
+                        const exactImg = (exactMatch.foto && exactMatch.foto.length > 20) ? exactMatch.foto : `https://ui-avatars.com/api/?name=${encodeURIComponent(exactMatch.nama)}&background=00e5ff&color=fff`;
+                        containerAvatar.innerHTML = `<img src="${exactImg}" class="w-full h-full object-cover rounded-full border-2 border-white shadow-md">`;
+                    }
+
                 } catch (e) {
-                    console.error("Gagal parsing dataCloud untuk autocomplete", e);
+                    console.error("Autocomplete Error:", e);
                 }
             });
 
-            // Tambahan: Tutup saran jika user klik di luar input
             document.addEventListener('click', (e) => {
                 if (e.target !== input) listSaran.classList.add('hidden');
             });
@@ -458,36 +466,34 @@
             const input = document.getElementById('inputNamaUser');
             if (!input) return;
             
-            input.blur();
             let namaRaw = input.value.trim();
-            
             if (namaRaw.length < 3) {
-                alert("Nama diisi yang lengkap ya, minimal 3 huruf!");
+                alert("Masukkan nama yang lengkap ya Om!");
                 return;
             }
 
-            const nama = namaRaw.replace(/\b\w/g, l => l.toUpperCase());
-            const dataLokalRaw = localStorage.getItem('dataCloud');
-            let fotoUser = "";
+            // Ambil foto yang tadi sudah "nempel" di input saat pilih saran
+            let fotoUser = input.dataset.selectedFoto;
 
-            if (dataLokalRaw) {
-                const dataLokal = JSON.parse(dataLokalRaw);
-                const dataOrang = dataLokal.keluarga.find(o => o.nama.toLowerCase() === nama.toLowerCase());
-                if (dataOrang && dataOrang.foto) fotoUser = dataOrang.foto;
-            }
-
+            // Jika foto belum ada (user ketik manual tanpa klik saran), cari lagi di data
             if (!fotoUser) {
-                fotoUser = `https://ui-avatars.com/api/?name=${encodeURIComponent(nama)}&background=00e5ff&color=fff`;
+                const dataLokalRaw = localStorage.getItem('dataCloud');
+                if (dataLokalRaw) {
+                    const dataLokal = JSON.parse(dataLokalRaw);
+                    const orang = dataLokal.keluarga.find(o => o.nama.toLowerCase() === namaRaw.toLowerCase());
+                    if (orang && orang.foto) fotoUser = orang.foto;
+                }
             }
 
-            localStorage.setItem('userNama', nama);
-            localStorage.setItem('userFoto', fotoUser);
+            // Fallback terakhir: pakai Inisial
+            if (!fotoUser) {
+                fotoUser = `https://ui-avatars.com/api/?name=${encodeURIComponent(namaRaw)}&background=00e5ff&color=fff`;
+            }
 
-            const modal = document.getElementById('modalLogin');
-            if (modal) modal.classList.add('hidden');
-            document.body.style.overflow = 'auto';
+            localStorage.setItem('userNama', namaRaw);
+            localStorage.setItem('userFoto', fotoUser);
             
-            location.reload();
+            location.reload(); // Refresh untuk masuk ke dashboard
         }
 
         // --- 4. DASHBOARD & UI HELPERS ---
