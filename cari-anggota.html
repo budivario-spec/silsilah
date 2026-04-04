@@ -192,18 +192,23 @@
             const input = document.getElementById('searchInput').value.trim().toLowerCase();
             const dataLengkap = getDaftarDariStorage();
             
-            // Jika input kosong, tampilkan semua data normal
+            // 1. Jika kolom input kosong, tampilkan semua data
             if (input === "") {
                 renderData(dataLengkap, false);
                 return;
             }
-            
-            const hasilFilter = dataLengkap.filter(anggota => 
-                (anggota.nama && anggota.nama.toLowerCase().includes(input)) || 
-                (anggota.domisili && anggota.domisili.toLowerCase().includes(input))
-            );
 
-            // Kirim parameter 'true' sebagai tanda sedang mencari
+            // 2. Filter dengan pembersihan data (null check & trim)
+            const hasilFilter = dataLengkap.filter(anggota => {
+                // Pastikan nama ada dan bersihkan spasi berlebih
+                const nama = anggota.nama ? anggota.nama.toLowerCase().trim() : "";
+                const domisili = anggota.domisili ? anggota.domisili.toLowerCase().trim() : "";
+                
+                // Cek apakah input ada di dalam nama atau domisili
+                return nama.includes(input) || domisili.includes(input);
+            });
+
+            // 3. Render hasil (kirim parameter true karena sedang mencari)
             renderData(hasilFilter, true);
         }
 
