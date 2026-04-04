@@ -379,80 +379,68 @@
 
         function aktifkanAutocompleteNama() {
             const input = document.getElementById('inputNamaUser');
-            const listSaran = document.getElementById('listSaranNama'); 
-            const containerAvatar = document.getElementById('containerAvatar'); 
+            const listSaran = document.getElementById('listSaranNama');
+            const statusSaran = document.getElementById('statusSaran');
+            const kontenSaran = document.getElementById('kontenSaran');
 
             if (!input || !listSaran) return;
 
             input.addEventListener('input', function() {
                 const teks = this.value.trim().toLowerCase();
-                listSaran.innerHTML = '';
+                kontenSaran.innerHTML = '';
                 
                 if (teks.length < 2) {
                     listSaran.classList.add('hidden');
-                    resetAvatarIcon(); // Kembali ke ikon user-friends jika dihapus
                     return;
                 }
 
+                listSaran.classList.remove('hidden');
                 const dataLokalRaw = localStorage.getItem('dataCloud');
-                if (!dataLokalRaw) return;
 
-                try {
-                    const dataLokal = JSON.parse(dataLokalRaw);
-                    const matches = dataLokal.keluarga.filter(p => 
-                        p.nama && p.nama.toLowerCase().includes(teks)
-                    ).slice(0, 5);
-
-                    if (matches.length > 0) {
-                        matches.forEach(p => {
-                            const item = document.createElement('div');
-                            item.className = "p-4 border-b border-gray-50 hover:bg-cyan-50 active:bg-cyan-100 cursor-pointer flex items-center gap-3 text-left transition-colors";
-                            
-                            // Logika foto: Pakai foto asli atau UI-Avatars
-                            const imgUrl = (p.foto && p.foto.length > 20) ? p.foto : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nama)}&background=00e5ff&color=fff`;
-                            
-                            item.innerHTML = `
-                                <img src="${imgUrl}" class="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-100">
-                                <div>
-                                    <div class="font-bold text-gray-800 text-sm">${p.nama}</div>
-                                    <div class="text-[9px] text-gray-400 uppercase tracking-widest">${p.status || 'Anggota'}</div>
-                                </div>
-                            `;
-                            
-                            // AKSI SAAT NAMA DIKLIK
-                            item.onclick = () => {
-                                input.value = p.nama; // Isi input dengan nama lengkap
-                                listSaran.classList.add('hidden');
-                                
-                                // TAMPILKAN FOTO DI AVATAR MODAL
-                                if (containerAvatar) {
-                                    containerAvatar.innerHTML = `<img src="${imgUrl}" class="w-full h-full object-cover rounded-full border-2 border-white shadow-md">`;
-                                }
-                                
-                                // Simpan sementara URL foto untuk simpanIdentitas nanti
-                                input.dataset.selectedFoto = imgUrl; 
-                            };
-                            listSaran.appendChild(item);
-                        });
-                        listSaran.classList.remove('hidden');
-                    } else {
-                        listSaran.classList.add('hidden');
-                    }
-
-                    // Tambahan: Jika user ngetik nama lengkap persis tanpa klik saran, update foto juga
-                    const exactMatch = dataLokal.keluarga.find(o => o.nama.toLowerCase() === teks);
-                    if (exactMatch) {
-                        const exactImg = (exactMatch.foto && exactMatch.foto.length > 20) ? exactMatch.foto : `https://ui-avatars.com/api/?name=${encodeURIComponent(exactMatch.nama)}&background=00e5ff&color=fff`;
-                        containerAvatar.innerHTML = `<img src="${exactImg}" class="w-full h-full object-cover rounded-full border-2 border-white shadow-md">`;
-                    }
-
-                } catch (e) {
-                    console.error("Autocomplete Error:", e);
+                // KONDISI 1: Data belum selesai di-download
+                if (!dataLokalRaw) {
+                    statusSaran.innerHTML = `<i class="fas fa-spinner fa-spin text-cyan-500 mr-2"></i> Menghubungkan ke server...`;
+                    perbaruiDashboardCloud().then(() => {
+                        // Panggil ulang event input secara otomatis setelah download selesai
+                        input.dispatchEvent(new Event('input'));
+                    });
+                    return;
                 }
-            });
 
-            document.addEventListener('click', (e) => {
-                if (e.target !== input) listSaran.classList.add('hidden');
+                // KONDISI 2: Data sudah ada, mulai filter
+                const dataLokal = JSON.parse(dataLokalRaw);
+                const matches = dataLokal.keluarga.filter(p => 
+                    p.nama && p.nama.toLowerCase().includes(teks)
+                ).slice(0, 5);
+
+                if (matches.length > 0) {
+                    statusSaran.classList.add('hidden'); // Sembunyikan loading
+                    matches.forEach(p => {
+                        const item = document.createElement('div');
+                        item.className = "p-4 border-b border-gray-50 hover:bg-cyan-50 active:bg-cyan-100 cursor-pointer flex items-center gap-3 text-left";
+                        
+                        const imgUrl = (p.foto && p.foto.length > 20) ? p.foto : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nama)}&background=00e5ff&color=fff`;
+                        
+                        item.innerHTML = `
+                            <img src="${imgUrl}" class="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-100">
+                            <div class="font-bold text-gray-800 text-sm">${p.nama}</div>
+                        `;
+                        
+                        item.onclick = () => {
+                            input.value = p.nama;
+                            listSaran.classList.add('hidden');
+                            const containerAvatar = document.getElementById('containerAvatar');
+                            if (containerAvatar) {
+                                containerAvatar.innerHTML = `<img src="${imgUrl}" class="w-full h-full object-cover rounded-full border-2 border-white shadow-md">`;
+                            }
+                        };
+                        kontenSaran.appendChild(item);
+                    });
+                } else {
+                    // KONDISI 3: Nama tidak ditemukan
+                    statusSaran.innerHTML = `<i class="fas fa-search text-gray-300 mr-2"></i> Nama tidak ditemukan`;
+                    statusSaran.classList.remove('hidden');
+                }
             });
         }
 
@@ -647,8 +635,12 @@
                     placeholder="Contoh: Muntari"
                     autocomplete="off">
                 
-                <div id="listSaranNama" class="absolute left-0 right-0 top-[100%] bg-white border border-gray-100 rounded-2xl shadow-xl z-[99999] max-h-48 overflow-y-auto hidden">
+                <div id="listSaranNama" class="absolute left-0 right-0 top-[100%] bg-white border border-gray-100 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto hidden">
+                    <div id="statusSaran" class="p-4 text-center text-sm text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-cyan-500 mr-2"></i> Menyiapkan daftar nama...
                     </div>
+                    <div id="kontenSaran"></div>
+                </div>
             </div>
             
             <button onclick="simpanIdentitas()" class="w-full mt-4 bg-[#00e5ff] text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
