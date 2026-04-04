@@ -545,8 +545,7 @@
             }
         }
 
-        async function perbaruiDashboardCloud() {
-            if (!localStorage.getItem('userNama')) return; 
+        async function perbaruiDashboardCloud() {            
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -559,7 +558,9 @@
                     perbaruiDashboardLokal();
                     try { cekNotifikasiBaru(resJson); } catch (e) {}
                 }
-            } catch (err) { console.warn("Koneksi lambat/offline"); }
+            } catch (err) { 
+                console.warn("Gagal ambil data cloud:", err); 
+            }
         }
 
         function hitungStatusSederhana(data) {

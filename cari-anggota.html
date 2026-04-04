@@ -76,7 +76,7 @@
 <body class="bg-gray-50 min-h-screen">
 
     <div class="header-curve">
-        <button onclick="window.location.href='index.html'" class="btn-back">←</button>
+        <button id="btnBack" class="btn-back">←</button>
         <h1 class="text-xl font-bold">Cari Anggota</h1>
     </div>
 
@@ -88,6 +88,10 @@
         </div>
 
     <script src="config.js"></script> <script>
+        document.getElementById('btnBack').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+        
         // 1. Fungsi Pembantu: Ambil data dari localStorage
         function getDaftarDariStorage() {
             const dataRaw = localStorage.getItem('dataCloud');
