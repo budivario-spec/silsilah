@@ -193,15 +193,22 @@
 
         // 5. Fitur Cari
         function filterAnggota() {
-            const input = document.getElementById('searchInput').value.toLowerCase();
+            const input = document.getElementById('searchInput').value.toLowerCase().trim();
             const daftarKeluarga = getDaftarDariStorage();
             
+            // Jika kotak pencarian kosong, tampilkan semua data normal
+            if (input === "") {
+                renderData(daftarKeluarga, false);
+                return;
+            }
+
             const hasilFilter = daftarKeluarga.filter(anggota => 
-                anggota.nama.toLowerCase().includes(input) || 
+                (anggota.nama && anggota.nama.toLowerCase().includes(input)) || 
                 (anggota.domisili && anggota.domisili.toLowerCase().includes(input))
             );
 
-            renderData(hasilFilter);
+            // KUNCI: Tambahkan 'true' agar renderData tahu ini adalah hasil pencarian
+            renderData(hasilFilter, true); 
         }
 
         // Jalankan saat halaman dibuka
