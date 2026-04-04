@@ -416,7 +416,7 @@
                         if (checkData) {
                             input.dispatchEvent(new Event('input')); // Ulangi pencarian jika sukses
                         } else {
-                            statusSaran.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> Gagal memuat data.`;
+                            statusSaran.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> Memeriksa daftar nama...`;
                         }
                     }).catch(() => {
                         statusSaran.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> Masalah koneksi.`;
