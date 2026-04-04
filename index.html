@@ -331,21 +331,28 @@
         let swiperInstance;
 
         // --- 2. INITIAL LOAD ---
-        window.addEventListener('load', () => {
-            // Cek apakah user perlu login
+        window.addEventListener('load', async () => { // Tambahkan 'async' di sini
+            // 1. Cek apakah user perlu login
             cekIdentitas();
 
-            // Tampilkan sapaan di Dashboard
+            // 2. Tampilkan sapaan di Dashboard
             tampilkanSapaan(); 
 
-            // Update data jika sudah login
+            // 3. Update data jika sudah login
             if (localStorage.getItem('userNama')) {
                 document.body.style.overflow = 'auto';
-                perbaruiDashboardLokal();
-                perbaruiDashboardCloud();
+                
+                // Tampilkan data yang ada di memori hp dulu (biar tidak kosong)
+                perbaruiDashboardLokal(); 
+                
+                // Tarik data terbaru dari Cloud dan tunggu sampai selesai (await)
+                await perbaruiDashboardCloud(); 
+                
+                // Update dashboard lagi dengan data yang baru saja didownload
+                perbaruiDashboardLokal(); 
             }
             
-            // Atur scroll body
+            // 4. Atur scroll body
             document.body.style.overflowY = (document.body.scrollHeight <= window.innerHeight) ? 'hidden' : 'auto';
         });
 
