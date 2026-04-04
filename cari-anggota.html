@@ -135,10 +135,11 @@
         }
 
         // 4. Fungsi Render: Tampilkan Kartu
-        function renderData(data) {
+        function renderData(data, isSearching = false) {
             const wadahDaftar = document.getElementById('wadahDaftar');
             
-            if (!data || data.length === 0) {
+            // Jika data benar-benar kosong dari awal (Gagal Sinkron)
+            if (!data || (data.length === 0 && !isSearching)) {
                 wadahDaftar.innerHTML = `
                     <div class="text-center mt-12 px-6">
                         <div class="bg-red-50 p-6 rounded-2xl border-2 border-dashed border-red-200">
@@ -149,17 +150,27 @@
                 return;
             }
 
+            // Jika sedang mencari tapi tidak ada yang cocok
+            if (data.length === 0 && isSearching) {
+                wadahDaftar.innerHTML = `
+                    <div class="text-center mt-12 px-6">
+                        <p class="text-gray-400 italic text-sm">Nama atau lokasi tersebut tidak ditemukan di daftar keluarga.</p>
+                    </div>`;
+                return;
+            }
+
             wadahDaftar.innerHTML = ''; 
+            // Urutkan Nama A-Z
             const dataTerurut = [...data].sort((a, b) => a.nama.localeCompare(b.nama));
 
             dataTerurut.forEach(anggota => {
                 let sumberFoto = anggota.foto;
-                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "" || sumberFoto.includes('127.0.0.1')) {
+                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "" || sumberFoto.length < 20) {
                     sumberFoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(anggota.nama)}&background=00e5ff&color=fff`;
                 }
 
                 let infoLahir = (anggota.tempatLahir || anggota.tanggalLahir) 
-                    ? `${anggota.tempatLahir || '?'}, ${anggota.tanggalLahir || '?'}`
+                    ? `${anggota.tempatLahir || ''}, ${anggota.tanggalLahir || ''}`
                     : "Data kelahiran belum diisi";
 
                 wadahDaftar.innerHTML += `
@@ -178,15 +189,22 @@
 
         // 5. Fitur Cari
         function filterAnggota() {
-            const input = document.getElementById('searchInput').value.toLowerCase();
+            const input = document.getElementById('searchInput').value.trim().toLowerCase();
             const dataLengkap = getDaftarDariStorage();
             
+            // Jika input kosong, tampilkan semua data normal
+            if (input === "") {
+                renderData(dataLengkap, false);
+                return;
+            }
+            
             const hasilFilter = dataLengkap.filter(anggota => 
-                anggota.nama.toLowerCase().includes(input) || 
+                (anggota.nama && anggota.nama.toLowerCase().includes(input)) || 
                 (anggota.domisili && anggota.domisili.toLowerCase().includes(input))
             );
 
-            renderData(hasilFilter);
+            // Kirim parameter 'true' sebagai tanda sedang mencari
+            renderData(hasilFilter, true);
         }
 
         // Jalankan saat halaman dibuka
