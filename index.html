@@ -534,21 +534,30 @@
             }
         }
 
-        async function perbaruiDashboardCloud() {            
+        async function perbaruiDashboardCloud() {
+            const input = document.getElementById('inputNamaUser');
+            
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000);
-                const response = await fetch(URL_API + "?t=" + Date.now(), { signal: controller.signal });
-                clearTimeout(timeoutId);
-
+                const response = await fetch(URL_API + "?t=" + Date.now());
                 const resJson = await response.json();
+
                 if (resJson && resJson.keluarga) {
                     localStorage.setItem('dataCloud', JSON.stringify(resJson));
-                    perbaruiDashboardLokal();
-                    try { cekNotifikasiBaru(resJson); } catch (e) {}
+                    
+                    // AKTIFKAN INPUT SETELAH DATA SIAP
+                    if (input) {
+                        input.disabled = false;
+                        input.placeholder = "Contoh: Muntari";
+                        input.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+                        input.classList.add('bg-gray-50', 'text-gray-700');
+                        input.focus(); // Langsung arahkan kursor ke sini
+                    }
+                    
+                    console.log("Data siap untuk autocomplete HP");
                 }
-            } catch (err) { 
-                console.warn("Gagal ambil data cloud:", err); 
+            } catch (err) {
+                if (input) input.placeholder = "Gagal memuat data, periksa koneksi.";
+                console.error("Gagal sinkronisasi:", err);
             }
         }
 
@@ -628,9 +637,9 @@
             </div>
 
             <h3 class="text-xl font-black text-gray-800 mb-2">Selamat Datang!</h3>
-            <p class="text-sm text-gray-500 mb-6">Silakan masukkan nama lengkap.</p>
+            <p class="text-sm text-gray-500 mb-6">Silakan masukkan nama.</p>
             
-            <div class="relative"> <input type="text" id="inputNamaUser" autofocus
+            <div class="relative"> <input type="text" id="inputNamaUser" autofocus disabled
                     class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 px-6 text-center font-bold text-gray-700 focus:outline-none focus:border-[#00e5ff] transition-all mb-4 capitalize" 
                     placeholder="Contoh: Muntari"
                     autocomplete="off">
