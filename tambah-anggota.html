@@ -246,55 +246,55 @@
 
     <script src="config.js"></script> 
     <script>
-        // 1. Ambil Parameter ID dari URL
+        // 1. Ambil ID dari URL (?id=...)
         const urlParams = new URLSearchParams(window.location.search);
         const idAnggotaUrl = urlParams.get('id');
 
-        // 2. Fungsi Ambil Data & Isi Form (Mode Edit)
-        function cekModeEdit() {
-            if (!idAnggotaUrl) return; 
+        // 2. Fungsi Utama Isi Data
+        function muatDataEdit() {
+            if (!idAnggotaUrl) {
+                console.log("Mode: Tambah Anggota Baru");
+                return; 
+            }
 
+            console.log("Mode: Edit Anggota dengan ID:", idAnggotaUrl);
+
+            // Ambil gudang data
             const dataRaw = localStorage.getItem('dataCloud');
             if (dataRaw) {
                 const resJson = JSON.parse(dataRaw);
                 const daftarKeluarga = resJson.keluarga || [];
                 
-                // PERBAIKAN: Gunakan dua kali tanda sama dengan (==) agar angka 10 sama dengan teks "10"
-                // Dan kita pastikan id di-trim jika itu teks
+                // Cari anggota (paksa string agar cocok angka vs teks)
                 const anggota = daftarKeluarga.find(a => String(a.id).trim() == String(idAnggotaUrl).trim());
 
                 if (anggota) {
-                    console.log("Data ditemukan:", anggota.nama);
+                    // ISI KOTAK INPUT
+                    document.getElementById('namaLengkap').value = anggota.nama || "";
+                    document.getElementById('domisili').value = anggota.domisili || "";
                     
-                    // Isi Nama
-                    const elNama = document.getElementById('namaLengkap');
-                    if(elNama) elNama.value = anggota.nama || "";
+                    // UBAH JUDUL HEADER
+                    const judulHeader = document.querySelector('.header-curve h1');
+                    if (judulHeader) judulHeader.innerText = "Edit Anggota";
 
-                    // Isi Alamat/Domisili
-                    const elDomisili = document.getElementById('domisili');
-                    if(elDomisili) elDomisili.value = anggota.domisili || "";
-                    
-                    // Ganti Judul Header
-                    const judulHalaman = document.querySelector('.header-curve h1');
-                    if(judulHalaman) judulHalaman.innerText = "Edit Anggota";
-
-                    // Tampilkan Foto jika ada
+                    // TAMPILKAN FOTO JIKA ADA
                     if (anggota.foto && anggota.foto.length > 20) {
-                        const previewImage = document.getElementById('previewImage');
-                        const defaultIcon = document.getElementById('defaultIcon');
-                        previewImage.src = anggota.foto;
-                        previewImage.classList.remove('hidden');
-                        defaultIcon.classList.add('hidden');
+                        const preview = document.getElementById('previewImage');
+                        const icon = document.getElementById('defaultIcon');
+                        preview.src = anggota.foto;
+                        preview.classList.remove('hidden');
+                        icon.classList.add('hidden');
                     }
+                    console.log("Data " + anggota.nama + " berhasil dimuat ke form.");
                 } else {
-                    console.error("ID tidak ditemukan di daftar keluarga:", idAnggotaUrl);
+                    console.error("ID " + idAnggotaUrl + " tidak ditemukan di dataCloud.");
                 }
             } else {
-                console.error("Gudang data (dataCloud) kosong di storage.");
+                console.error("Gudang dataCloud tidak ditemukan di localStorage.");
             }
         }
 
-        // 3. Fungsi Kapitalisasi Otomatis (RT/RW/Romawi)
+        // 3. Fungsi Kapitalisasi (RT, RW, Romawi)
         function buatKapital(str) {
             let hasil = str.replace(/\b\w/g, char => char.toUpperCase());
             const singkatanWajib = ["Rt", "Rw", "Diy", "Ii", "Iii", "Iv", "Vi", "Vii", "Viii", "Ix", "Xi", "Xii"];
@@ -305,14 +305,14 @@
             return hasil;
         }
 
-        // 4. Inisialisasi saat Halaman Siap
+        // 4. Jalankan saat halaman siap
         document.addEventListener('DOMContentLoaded', () => {
-            cekModeEdit();
+            // EKSEKUSI PENGISIAN DATA
+            muatDataEdit();
 
-            // Pasang Listener Kapitalisasi
+            // Pasang fitur kapitalisasi otomatis
             const inputNama = document.getElementById('namaLengkap');
             const inputAlamat = document.getElementById('domisili');
-
             [inputNama, inputAlamat].forEach(input => {
                 if (input) {
                     input.addEventListener('input', function() {
@@ -333,7 +333,7 @@
             }
         });
 
-        // 6. Logika Upload Foto (Kompresi)
+        // 6. Logika Pilih Foto
         document.getElementById('fotoAnggota').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -348,7 +348,6 @@
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                         document.getElementById('previewImage').src = dataUrl;
                         document.getElementById('previewImage').classList.remove('hidden');
