@@ -1,520 +1,134 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <title>Tambah Anggota - Silsilah Bani Muntari</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4RDDKDQNKB"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-
-        gtag('config', 'G-4RDDKDQNKB');
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .header-curve {
-            background: linear-gradient(135deg, #00e5ff 0%, #00acc1 100%);
-            height: 90px;
-            border-bottom-left-radius: 10% 30px;
-            border-bottom-right-radius: 10% 30px;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-        .btn-back {
-            position: absolute;
-            left: 15px;
-            top: 35px;
-            background: rgba(39, 38, 38, 0.2);
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }        
-        .input-outline {
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            padding: 12px;
-            width: 100%;
-            outline: none;
-        }
-        .input-outline:focus { border-color: #00e5ff; border-width: 2px; }
-        .input-group { position: relative; margin-bottom: 20px; }
-        .profile-pic-container {
-            width: 150px;
-            height: 150px;
-            background-color: #00e5ff;
-            border-radius: 50%;
-            position: relative;
-            margin: 30px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .camera-badge {
-            position: absolute;
-            top: 5px;
-            right: -15px;
-            background-color: #00c853;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 3px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 10;
-        }
-        .btn-simpan {
-            background-color: #00e5ff;
-            color: white;
-            padding: 15px;
-            border-radius: 30px;
-            font-weight: bold;
-            width: 100%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .btn-hapus {
-            border: 2px solid #ff5252;
-            color: #ff5252;
-            padding: 15px;
-            border-radius: 30px;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 10px;
-        }
-    </style>
-</head>
-<body class="bg-white">
-
-    <div class="header-curve">
-        <button onclick="window.history.back()" class="btn-back">←</button>
-        <h1 id="judulHalaman" class="text-xl font-bold">Tambah Anggota</h1>
-    </div>
-
-    <div class="p-6 space-y-5">
-        
-        <div class="input-group">
-            <input type="text" id="namaLengkap" placeholder="Nama Lengkap" class="input-outline">
-        </div>
-
-        <div class="input-group">
-            <input type="text" id="tempatLahir" list="list-kota" placeholder="Tempat Lahir" class="input-outline">
-            
-            <datalist id="list-kota">
-                <option value="Kota Yogyakarta">
-                <option value="Kab. Bantul">
-                <option value="Kab. Gunungkidul">
-                <option value="Kab. Kulon Progo">
-                <option value="Kab. Sleman">
-
-                <option value="Kota Semarang">
-                <option value="Kota Salatiga"> 
-                <option value="Kota Magelang">
-                <option value="Kab. Magelang">
-                <option value="Kota Surakarta">
-                <option value="Kab. Boyolali">
-                <option value="Kab. Klaten">
-                <option value="Kab. Purworejo">
-                <option value="Kab. Temanggung">
-                <option value="Kab. Wonosobo">
-                <option value="Kab. Kebumen">
-                <option value="Kab. Banyumas">
-                <option value="Kab. Cilacap">
-                <option value="Kab. Brebes">
-                <option value="Kab. Tegal">
-                <option value="Kab. Pemalang">
-                <option value="Kab. Pekalongan">
-                <option value="Kab. Batang">
-                <option value="Kab. Kendal">
-                <option value="Kab. Demak">
-                <option value="Kab. Kudus">
-                <option value="Kab. Jepara">
-                <option value="Kab. Pati">
-                <option value="Kab. Rembang">
-                <option value="Kab. Blora">
-                <option value="Kab. Grobogan">
-                <option value="Kab. Sragen">
-                <option value="Kab. Karanganyar">
-                <option value="Kab. Sukoharjo">
-                <option value="Kab. Wonogiri">
-
-                <option value="Kota Surabaya">
-                <option value="Kota Malang">
-                <option value="Kab. Malang">
-                <option value="Kota Kediri">
-                <option value="Kab. Kediri">
-                <option value="Kota Madiun">
-                <option value="Kab. Madiun">
-                <option value="Kab. Pacitan">
-                <option value="Kab. Ponorogo">
-                <option value="Kab. Trenggalek">
-                <option value="Kab. Tulungagung">
-                <option value="Kab. Blitar">
-                <option value="Kab. Nganjuk">
-                <option value="Kab. Jombang">
-                <option value="Kab. Mojokerto">
-                <option value="Kab. Sidoarjo">
-                <option value="Kab. Gresik">
-                <option value="Kab. Lamongan">
-                <option value="Kab. Tuban">
-                <option value="Kab. Bojonegoro">
-                <option value="Kab. Ngawi">
-                <option value="Kab. Magetan">
-
-                <option value="Kota Bandung">
-                <option value="Kab. Bandung">
-                <option value="Kota Bekasi">
-                <option value="Kab. Bekasi">
-                <option value="Kota Bogor">
-                <option value="Kab. Bogor">
-                <option value="Kota Depok">
-                <option value="Kota Serang">
-                <option value="Kota Tangerang">
-                
-                </datalist>
-        </div>
-
-        <div class="input-group relative">
-            <input type="date" id="tanggalLahir" class="input-outline">
-            <span class="absolute right-4 top-3 text-xl">📅</span>
-        </div>
-
-        <div class="input-group">
-            <textarea id="domisili" placeholder="Domisili" rows="4" class="input-outline"></textarea>
-        </div>
-
-        <div class="input-group">
-            <label class="text-xs text-gray-500 ml-2">Hubungan Sebagai:</label>
-            <select id="statusKekerabatan" class="input-outline bg-white">
-                <option value="none">Kepala Keluarga / Orang Tua Utama</option>
-                <option value="pasangan">Pasangan (Suami/Istri) dari...</option>
-                <option value="anak">Anak dari...</option>
-            </select>
-        </div>
-
-        <div id="groupRelasi" class="input-group hidden">
-            <label class="text-xs text-gray-500 ml-2">Anak dari... atau Pasangan (Suami/Istri) dari... :</label>
-            <input type="text" id="inputCariParent" list="daftarKeluargaCari" class="input-outline bg-white" placeholder="Ketik nama orang tua...">
-            <input type="hidden" id="parentID"> 
-        </div>
-
-        <div class="mb-4" id="groupPasangan">
-            <label class="block text-gray-600 text-sm font-semibold mb-2 ml-2">Pilih Pasangan (Suami/Istri)</label>
-            <input type="text" id="inputCariPasangan" list="daftarKeluargaCari" class="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none focus:border-[#00e5ff] text-gray-700" placeholder="Ketik nama pasangan...">
-            <input type="hidden" id="idPasangan"> 
-            <p class="text-[10px] text-gray-400 mt-1 italic ml-2">*Kosongkan jika belum menikah / belum terdaftar.</p>
-        </div>
-
-        <datalist id="daftarKeluargaCari"></datalist>
-
-        <div class="profile-pic-container">
-            <img id="profilePreview" src="" class="hidden w-full h-full rounded-full object-cover border-4 border-white shadow-sm">
-            <div id="defaultIcon">
-                <svg width="80" height="80" viewBox="0 0 24 24" fill="white">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                </svg>
-            </div>
-            <div class="camera-badge cursor-pointer" onclick="document.getElementById('fileInput').click()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                    <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
-                </svg>
-            </div>
-            <input type="file" id="fileInput" accept="image/*" class="hidden">
-        </div> 
-
-        <button type="button" id="btnSimpan" onclick="simpanAnggota()" class="btn-simpan active:scale-95 transition-transform">
-            SIMPAN DATA KE MEMORI
-        </button>
-
-        <button type="button" id="btnHapus" onclick="hapusAnggota()" class="btn-hapus hidden active:scale-95 transition-transform">
-            HAPUS ANGGOTA
-        </button>
-    </div>
-
-    <script src="config.js"></script> 
-    <script>
-        const fileInput = document.getElementById('fileInput');
-        const previewImage = document.getElementById('profilePreview');
-        const defaultIcon = document.getElementById('defaultIcon');
-        const statusSelect = document.getElementById('statusKekerabatan');
-        const groupRelasi = document.getElementById('groupRelasi');
-        const groupPasangan = document.getElementById('groupPasangan');
-        
+<script>
+        // 1. Ambil ID dari alamat URL (?id=...)
         const urlParams = new URLSearchParams(window.location.search);
-        const idAnggotaEdit = urlParams.get('id');
+        const idAnggotaUrl = urlParams.get('id');
 
-        // 1. Fungsi Pembantu: Ambil data dari key 'dataCloud'
+        // 2. Fungsi Ambil Data dari Storage (Helper)
         function ambilDataLokal() {
-            const data = localStorage.getItem('dataCloud');
-            return data ? JSON.parse(data) : { keluarga: [], iklan: [] };
+            const raw = localStorage.getItem('dataCloud');
+            return raw ? JSON.parse(raw) : { keluarga: [] };
         }
 
-        window.onload = function() {
-            updateDatalistNama(); 
-
-            if (idAnggotaEdit) {
-                document.getElementById('judulHalaman').innerText = "Edit Anggota";
-                document.getElementById('btnSimpan').innerText = "SIMPAN PERUBAHAN";
-                document.getElementById('btnHapus').classList.remove('hidden');
-                muatDataUntukEdit(idAnggotaEdit);
-            }
-        };
-
-        // Logika Tampil/Sembunyi Input Relasi
-        statusSelect.addEventListener('change', function() {
-            const status = this.value;
-            groupRelasi.classList.toggle('hidden', status !== 'anak');
-            // Pasangan biasanya selalu ditampilkan atau opsional
-        });
-
+        // 3. FUNGSI LENGKAP OM (Mode Edit)
         function muatDataUntukEdit(id) {
             const dataFull = ambilDataLokal();
+            // Gunakan == agar angka dan string cocok
             const data = dataFull.keluarga.find(a => a.id == id);
 
             if (data) {
+                console.log("Memuat data edit untuk:", data.nama);
+                
+                // Isi input dasar
                 document.getElementById('namaLengkap').value = data.nama || "";
                 document.getElementById('domisili').value = data.domisili || "";
-                document.getElementById('tempatLahir').value = data.tempatLahir || "";
-                document.getElementById('tanggalLahir').value = data.tanggalLahir || "";
                 
-                statusSelect.value = data.status || "none";
-                groupRelasi.classList.toggle('hidden', data.status !== 'anak');
+                // Cek apakah elemen ini ada di HTML Om, jika ada maka diisi
+                if(document.getElementById('tempatLahir')) document.getElementById('tempatLahir').value = data.tempatLahir || "";
+                if(document.getElementById('tanggalLahir')) document.getElementById('tanggalLahir').value = data.tanggalLahir || "";
+                
+                // Logika Status & Relasi
+                const statusSelect = document.getElementById('statusSelect');
+                const groupRelasi = document.getElementById('groupRelasi');
+                
+                if (statusSelect) {
+                    statusSelect.value = data.status || "none";
+                    if (groupRelasi) {
+                        groupRelasi.classList.toggle('hidden', data.status !== 'anak');
+                    }
+                }
 
-                // Set ID Hidden
-                document.getElementById('parentID').value = data.parentID || "";
-                document.getElementById('idPasangan').value = data.idPasangan || "";
+                // Set ID Hidden (Penting untuk simpan ulang)
+                if(document.getElementById('parentID')) document.getElementById('parentID').value = data.parentID || "";
+                if(document.getElementById('idPasangan')) document.getElementById('idPasangan').value = data.idPasangan || "";
 
-                // Set Nama di Input Pencarian (Cari berdasarkan ID)
+                // Cari Nama Orang Tua berdasarkan ID
                 if (data.parentID) {
                     const ortu = dataFull.keluarga.find(o => o.id == data.parentID);
-                    if (ortu) document.getElementById('inputCariParent').value = ortu.nama;
+                    const inputCariParent = document.getElementById('inputCariParent');
+                    if (ortu && inputCariParent) inputCariParent.value = ortu.nama;
                 }
+                
+                // Cari Nama Pasangan berdasarkan ID
                 if (data.idPasangan) {
                     const pasangan = dataFull.keluarga.find(o => o.id == data.idPasangan);
-                    if (pasangan) document.getElementById('inputCariPasangan').value = pasangan.nama;
+                    const inputCariPasangan = document.getElementById('inputCariPasangan');
+                    if (pasangan && inputCariPasangan) inputCariPasangan.value = pasangan.nama;
                 }
 
+                // Tampilkan Foto
                 if (data.foto && data.foto.startsWith('data:image')) {
-                    previewImage.src = data.foto;
-                    previewImage.classList.remove('hidden');
-                    defaultIcon.classList.add('hidden');
-                }
-            }
-        }
-
-        function updateDatalistNama() {
-            const dataFull = ambilDataLokal();
-            const datalist = document.getElementById('daftarKeluargaCari');
-            datalist.innerHTML = "";
-            
-            dataFull.keluarga.sort((a, b) => a.nama.localeCompare(b.nama));
-            dataFull.keluarga.forEach(orang => {
-                if (orang.id != idAnggotaEdit) {
-                    const option = document.createElement('option');
-                    option.value = orang.nama; 
-                    datalist.appendChild(option);
-                }
-            });
-        }
-
-        // Sinkronisasi Nama -> ID
-        function sinkronkanInput(idInputText, idInputHidden) {
-            const txtInput = document.getElementById(idInputText);
-            const hiddenID = document.getElementById(idInputHidden);
-
-            txtInput.addEventListener('input', function() {
-                const val = this.value;
-                const dataFull = ambilDataLokal();
-                const ketemu = dataFull.keluarga.find(o => o.nama.toLowerCase() === val.toLowerCase());
-
-                if (ketemu) {
-                    hiddenID.value = ketemu.id;
-                    this.style.borderColor = "#00e5ff"; 
-                } else {
-                    hiddenID.value = ""; 
-                    this.style.borderColor = val.length > 0 ? "orange" : ""; 
-                }
-            });
-        }
-
-        sinkronkanInput('inputCariParent', 'parentID');
-        sinkronkanInput('inputCariPasangan', 'idPasangan');
-
-        async function simpanAnggota() {
-            const currentId = idAnggotaEdit ? idAnggotaEdit : Date.now().toString();
-            let fotoFinal = previewImage.src;
-
-            // Jika foto kosong/default, berikan SVG default
-            if (previewImage.classList.contains('hidden') || !fotoFinal.startsWith('data:image')) {
-                fotoFinal = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><rect width='24' height='24' fill='%2300e5ff'/><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>`;
-            }
-
-            const dataBaru = {
-                action: "SAVE",
-                id: currentId,
-                nama: document.getElementById('namaLengkap').value,
-                parentID: document.getElementById('parentID').value,
-                status: statusSelect.value,
-                domisili: document.getElementById('domisili').value,
-                foto: fotoFinal,
-                idPasangan: document.getElementById('idPasangan').value,
-                tempatLahir: document.getElementById('tempatLahir').value,
-                tanggalLahir: document.getElementById('tanggalLahir').value
-            };
-
-            if (!dataBaru.nama) return alert("Nama harus diisi!");
-
-            // SIMPAN KE LOKAL (dataCloud)
-            let dataFull = ambilDataLokal();
-            const index = dataFull.keluarga.findIndex(a => a.id == currentId);
-            if (index > -1) dataFull.keluarga[index] = dataBaru; else dataFull.keluarga.push(dataBaru);
-            localStorage.setItem('dataCloud', JSON.stringify(dataFull));
-
-            // SIMPAN KE CLOUD
-            try {
-                const btn = document.getElementById('btnSimpan');
-                btn.innerText = "MENGIRIM...";
-                btn.disabled = true;
-
-                await fetch(URL_API, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dataBaru)
-                });
-                
-                alert("Berhasil disimpan!");
-                window.location.href = 'index.html';
-            } catch (e) {
-                alert("Tersimpan di lokal, gagal sinkron Cloud.");
-                window.location.href = 'index.html';
-            }
-        }
-
-        async function hapusAnggota() {
-            const idTerpilih = idAnggotaEdit;
-            if (!idTerpilih) return;
-
-            if (confirm("Yakin mau hapus data ini?")) {
-                const btnHapus = document.getElementById('btnHapus');
-                btnHapus.innerText = "MENGHAPUS...";
-                btnHapus.disabled = true;
-
-                try {
-                    // Kita kirim action & id lewat URL biar GAS gampang bacanya via e.parameter
-                    const urlHapus = `${URL_API}?action=delete&id=${idTerpilih}`;
-                    
-                    // Gunakan method POST tapi biarkan datanya di URL
-                    await fetch(urlHapus, { 
-                        method: 'POST',
-                        mode: 'no-cors' // Supaya tidak kena blokir CORS browser
-                    });
-
-                    // Sisi Lokal: Hapus dari localStorage
-                    let dataFull = ambilDataLokal();
-                    dataFull.keluarga = dataFull.keluarga.filter(a => a.id != idTerpilih);
-                    localStorage.setItem('dataCloud', JSON.stringify(dataFull));
-
-                    alert("Data berhasil dihapus!");
-                    window.location.href = 'index.html'; 
-
-                } catch (e) {
-                    console.error(e);
-                    alert("Gagal sinkron Cloud. Cek internet.");
-                    btnHapus.disabled = false;
-                    btnHapus.innerText = "HAPUS ANGGOTA";
-                }
-            }
-        }
-
-        fileInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    // PROSES KOMPRESI DIMULAI
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 400; // Ukuran cukup untuk profil silsilah
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        // Ubah ke format JPEG dengan kualitas 70% agar file sangat ringan
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                        
-                        previewImage.src = dataUrl;
+                    const previewImage = document.getElementById('previewImage');
+                    const defaultIcon = document.getElementById('defaultIcon');
+                    if(previewImage && defaultIcon) {
+                        previewImage.src = data.foto;
                         previewImage.classList.remove('hidden');
                         defaultIcon.classList.add('hidden');
-                        
-                        console.log("Foto berhasil dikompres!");
+                    }
+                }
+
+                // Ganti judul halaman jadi Edit
+                const h1 = document.querySelector('.header-curve h1');
+                if(h1) h1.innerText = "Edit Anggota";
+            }
+        }
+
+        // 4. JALANKAN SAAT HALAMAN DIBUKA
+        document.addEventListener('DOMContentLoaded', () => {
+            if (idAnggotaUrl) {
+                muatDataUntukEdit(idAnggotaUrl);
+            }
+
+            // Fitur Kapitalisasi Otomatis
+            const inputNama = document.getElementById('namaLengkap');
+            const inputAlamat = document.getElementById('domisili');
+            [inputNama, inputAlamat].forEach(input => {
+                if (input) {
+                    input.addEventListener('input', function() {
+                        const start = this.selectionStart;
+                        this.value = buatKapital(this.value);
+                        this.setSelectionRange(start, start);
+                    });
+                }
+            });
+        });
+
+        // 5. Fungsi Kapitalisasi (RT/RW/Romawi)
+        function buatKapital(str) {
+            let hasil = str.replace(/\b\w/g, char => char.toUpperCase());
+            const singkatan = ["Rt", "Rw", "Diy", "Ii", "Iii", "Iv", "Vi", "Vii", "Viii", "Ix", "Xi", "Xii"];
+            singkatan.forEach(k => {
+                const reg = new RegExp("\\b" + k + "\\b", "gi");
+                hasil = hasil.replace(reg, k.toUpperCase());
+            });
+            return hasil;
+        }
+
+        // 6. Tombol Kembali
+        document.getElementById('btnBack').addEventListener('click', () => {
+            window.location.href = idAnggotaUrl ? 'cari-anggota.html' : 'index.html';
+        });
+
+        // 7. Logika Upload Foto (Resize & Compress)
+        document.getElementById('fotoAnggota').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        let w = 300; let h = (img.height / img.width) * w;
+                        canvas.width = w; canvas.height = h;
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const b64 = canvas.toDataURL('image/jpeg', 0.7);
+                        document.getElementById('previewImage').src = b64;
+                        document.getElementById('previewImage').classList.remove('hidden');
+                        document.getElementById('defaultIcon').classList.add('hidden');
                     };
+                    img.src = event.target.result;
                 };
                 reader.readAsDataURL(file);
             }
         });
-
-        function buatKapital(teks) {
-            // 1. Standar dulu: kapital awal kata (misal: "rt. 02" -> "Rt. 02")
-            let hasil = teks.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
-
-            // 2. Daftar kata yang WAJIB huruf besar semua (Singkatan & Romawi)
-            const singkatanWajib = ["Rt", "Rw", "Diy", "Ii", "Iii", "Iv", "Vi", "Vii", "Viii", "Ix", "Xi", "Xii"];
-            
-            // 3. Kita sapu bersih kata yang salah tadi
-            singkatanWajib.forEach(kata => {
-                // \b artinya batas kata, supaya kalau ada nama "Arti" tidak berubah jadi "ARTi"
-                const regex = new RegExp("\\b" + kata + "\\b", "gi");
-                
-                // Kita paksa jadi huruf besar semua (RT, RW, DIY, II, dst)
-                hasil = hasil.replace(regex, kata.toUpperCase());
-            });
-
-            return hasil;
-        }
-
-        // Ganti bagian ini ya Om, perhatikan ID 'namaLengkap'
-        const inputNama = document.getElementById('namaLengkap'); // Tadi Om tulis 'nama'
-        const inputAlamat = document.getElementById('domisili');
-
-        [inputNama, inputAlamat].forEach(input => {
-            if (input) {
-                input.addEventListener('input', function() {
-                    const start = this.selectionStart;
-                    
-                    // PERBAIKAN: Panggil fungsi buatKapital(this.value) 
-                    // supaya RT, RW, dan Romawi ikut terproses
-                    this.value = buatKapital(this.value);
-                    
-                    this.setSelectionRange(start, start);
-                });
-            }
-        });
-
     </script>
-</body>
-</html>
