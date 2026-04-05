@@ -62,103 +62,98 @@
 
     <script src="config.js"></script> 
     <script>
-        // 1. Ambil data dengan proteksi tipe data
-        function getDaftarDariStorage() {
+        // 1. Fungsi ambil data paling aman
+        function getDaftarData() {
+            const dataRaw = localStorage.getItem('dataCloud');
+            if (!dataRaw) return [];
             try {
-                const dataRaw = localStorage.getItem('dataCloud');
-                if (!dataRaw) return [];
                 const parsed = JSON.parse(dataRaw);
-                // Pastikan yang diambil adalah array
-                return Array.isArray(parsed.keluarga) ? parsed.keluarga : [];
+                // Cek apakah data ada di dalam 'keluarga' atau langsung di root array
+                return parsed.keluarga || (Array.isArray(parsed) ? parsed : []);
             } catch (e) {
-                console.error("Error ambil storage:", e);
                 return [];
             }
         }
 
-        // 2. Fungsi Render (Anti-Blank)
+        // 2. Fungsi Render (Ditambahkan proteksi input kosong)
         function renderData(data, sedangMencari = false) {
             const wadahDaftar = document.getElementById('wadahDaftar');
             const inputKetik = document.getElementById('searchInput').value.trim();
 
-            // Jika sedang tidak mencari tapi data kosong, tampilkan pesan sinkron
+            // Jika sedang tidak mencari dan data benar-benar tidak ada
             if (!sedangMencari && (!data || data.length === 0)) {
                 wadahDaftar.innerHTML = `
                     <div class="text-center mt-12 px-6">
-                        <div class="bg-red-50 p-6 rounded-2xl border-2 border-dashed border-red-200">
-                            <p class="text-gray-500 italic">Data belum sinkron.</p>
-                            <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded-xl mt-3 text-sm">Sinkron Sekarang</button>
-                        </div>
+                        <p class="text-gray-400">Data tidak tersedia. Silakan tekan tombol sinkron.</p>
+                        <button onclick="muatDaftarAnggota(true)" class="bg-cyan-500 text-white px-6 py-2 rounded-full mt-4">Sinkron Data</button>
                     </div>`;
                 return;
             }
 
-            // Jika sedang mencari dan tidak ada hasil
+            // Jika hasil pencarian nihil
             if (sedangMencari && (!data || data.length === 0)) {
-                wadahDaftar.innerHTML = `
-                    <div class="text-center mt-12 px-6">
-                        <p class="text-gray-400 italic">Nama "${inputKetik}" tidak ditemukan.</p>
-                    </div>`;
+                wadahDaftar.innerHTML = `<p class="text-center text-gray-400 mt-10">Nama "${inputKetik}" tidak ditemukan.</p>`;
                 return;
             }
 
-            // Tampilkan Data
             wadahDaftar.innerHTML = ''; 
-            // Tambahkan proteksi pada sort
+            // Sortir nama (proteksi Case Sensitive)
             const dataTerurut = [...data].sort((a, b) => {
-                const namaA = (a.nama || a.Nama || "").toString();
-                const namaB = (b.nama || b.Nama || "").toString();
-                return namaA.localeCompare(namaB);
+                const nA = (a.nama || a.Nama || "").toString().toLowerCase();
+                const nB = (b.nama || b.Nama || "").toString().toLowerCase();
+                return nA.localeCompare(nB);
             });
 
             dataTerurut.forEach(anggota => {
-                const namaTampil = anggota.nama || anggota.Nama || "Tanpa Nama";
-                const domisiliTampil = anggota.domisili || anggota.Domisili || "Lokasi tidak diisi";
+                // SAKTI: Ambil nama dari berbagai kemungkinan kolom
+                const namaFinal = anggota.nama || anggota.Nama || anggota.nama_lengkap || "Tanpa Nama";
+                const domisiliFinal = anggota.domisili || anggota.Domisili || "Lokasi tidak diisi";
                 
                 let sumberFoto = anggota.foto;
                 if (!sumberFoto || sumberFoto.length < 20) {
-                    sumberFoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(namaTampil)}&background=00e5ff&color=fff`;
+                    sumberFoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(namaFinal)}&background=00e5ff&color=fff`;
                 }
 
                 wadahDaftar.innerHTML += `
                     <div class="member-card shadow-sm cursor-pointer" onclick="window.location.href='tambah-anggota.html?id=${anggota.id}'">
                         <img src="${sumberFoto}" class="w-14 h-14 rounded-full object-cover border-2 border-[#00e5ff] mr-4">
                         <div class="flex-1">
-                            <h4 class="font-bold text-gray-800 text-md leading-tight">${namaTampil}</h4>
-                            <p class="text-xs text-gray-400 mt-1 italic">📍 ${domisiliTampil}</p>
+                            <h4 class="font-bold text-gray-800 text-md leading-tight">${namaFinal}</h4>
+                            <p class="text-xs text-gray-400 mt-1 italic">📍 ${domisiliFinal}</p>
                         </div>
                         <div class="text-gray-300 ml-2">❯</div>
                     </div>`;
             });
         }
 
-        // 3. Fungsi Filter (Penyebab Masalah - Diperbaiki)
+        // 3. Fungsi Filter (Dibuat sangat teliti)
         function filterAnggota() {
             const input = document.getElementById('searchInput').value.toLowerCase().trim();
-            const dataLengkap = getDaftarDariStorage();
+            const dataLengkap = getDaftarData();
             
-            // Perbaikan: Jika input kosong, tampilkan semua tanpa status 'sedangMencari'
-            if (!input) {
+            // Balikkan ke daftar awal jika input dihapus
+            if (input === "") {
                 renderData(dataLengkap, false);
                 return;
             }
 
             const hasilFilter = dataLengkap.filter(a => {
-                // SAKTI: Cek semua kemungkinan nama kolom dan pastikan jadi string
-                const namaCari = (a.nama || a.Nama || a.nama_lengkap || "").toString().toLowerCase();
-                const domisiliCari = (a.domisili || a.Domisili || "").toString().toLowerCase();
-                
-                return namaCari.includes(input) || domisiliCari.includes(input);
+                const nama = (a.nama || a.Nama || a.nama_lengkap || "").toString().toLowerCase();
+                const domisili = (a.domisili || a.Domisili || "").toString().toLowerCase();
+                return nama.includes(input) || domisili.includes(input);
             });
 
             renderData(hasilFilter, true);
         }
 
-        async function muatDaftarAnggota() {
-            let daftar = getDaftarDariStorage();
-            if (daftar.length === 0) {
+        // 4. Muat Data dengan opsi Paksa Sinkron
+        async function muatDaftarAnggota(paksa = false) {
+            let daftar = getDaftarData();
+            
+            if (daftar.length === 0 || paksa) {
+                document.getElementById('wadahDaftar').innerHTML = `<p class="text-center text-gray-400 animate-pulse mt-10">Mengambil data terbaru...</p>`;
                 await sinkronisasiDataCloud();
-                daftar = getDaftarDariStorage();
+                daftar = getDaftarData();
             }
             renderData(daftar, false);
         }
@@ -170,10 +165,10 @@
                 if (resJson && resJson.keluarga) {
                     localStorage.setItem('dataCloud', JSON.stringify(resJson));
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { console.error("Gagal tarik data:", err); }
         }
 
-        window.onload = muatDaftarAnggota;
+        window.onload = () => muatDaftarAnggota();
     </script>
 </body>
 </html>
