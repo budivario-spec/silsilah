@@ -5,68 +5,74 @@
 
         // 2. Fungsi Ambil Data dari Storage (Helper)
         function ambilDataLokal() {
-            const raw = localStorage.getItem('dataCloud');
-            return raw ? JSON.parse(raw) : { keluarga: [] };
+            try {
+                const raw = localStorage.getItem('dataCloud');
+                return raw ? JSON.parse(raw) : { keluarga: [] };
+            } catch (e) {
+                console.error("Gagal ambil data lokal", e);
+                return { keluarga: [] };
+            }
         }
 
-        // 3. FUNGSI LENGKAP OM (Mode Edit)
+        // 3. FUNGSI LENGKAP (Mode Edit)
         function muatDataUntukEdit(id) {
             const dataFull = ambilDataLokal();
-            // Gunakan == agar angka dan string cocok
-            const data = dataFull.keluarga.find(a => a.id == id);
+            if (!dataFull.keluarga) return;
+
+            const data = dataFull.keluarga.find(a => String(a.id) === String(id));
 
             if (data) {
                 console.log("Memuat data edit untuk:", data.nama);
                 
-                // Isi input dasar
-                document.getElementById('namaLengkap').value = data.nama || "";
-                document.getElementById('domisili').value = data.domisili || "";
-                
-                // Cek apakah elemen ini ada di HTML Om, jika ada maka diisi
-                if(document.getElementById('tempatLahir')) document.getElementById('tempatLahir').value = data.tempatLahir || "";
-                if(document.getElementById('tanggalLahir')) document.getElementById('tanggalLahir').value = data.tanggalLahir || "";
+                // Fungsi pembantu agar tidak error jika ID HTML tidak ada
+                const isiInput = (idHtml, nilai) => {
+                    const el = document.getElementById(idHtml);
+                    if (el) el.value = nilai || "";
+                };
+
+                isiInput('namaLengkap', data.nama);
+                isiInput('domisili', data.domisili);
+                isiInput('tempatLahir', data.tempatLahir);
+                isiInput('tanggalLahir', data.tanggalLahir);
+                isiInput('parentID', data.parentID);
+                isiInput('idPasangan', data.idPasangan);
                 
                 // Logika Status & Relasi
-                const statusSelect = document.getElementById('statusSelect');
-                const groupRelasi = document.getElementById('groupRelasi');
-                
-                if (statusSelect) {
-                    statusSelect.value = data.status || "none";
-                    if (groupRelasi) {
-                        groupRelasi.classList.toggle('hidden', data.status !== 'anak');
+                const sSelect = document.getElementById('statusSelect');
+                const gRelasi = document.getElementById('groupRelasi');
+                if (sSelect) {
+                    sSelect.value = data.status || "none";
+                    if (gRelasi) {
+                        gRelasi.classList.toggle('hidden', data.status !== 'anak');
                     }
                 }
 
-                // Set ID Hidden (Penting untuk simpan ulang)
-                if(document.getElementById('parentID')) document.getElementById('parentID').value = data.parentID || "";
-                if(document.getElementById('idPasangan')) document.getElementById('idPasangan').value = data.idPasangan || "";
-
                 // Cari Nama Orang Tua berdasarkan ID
                 if (data.parentID) {
-                    const ortu = dataFull.keluarga.find(o => o.id == data.parentID);
-                    const inputCariParent = document.getElementById('inputCariParent');
-                    if (ortu && inputCariParent) inputCariParent.value = ortu.nama;
+                    const ortu = dataFull.keluarga.find(o => String(o.id) === String(data.parentID));
+                    const inCariParent = document.getElementById('inputCariParent');
+                    if (ortu && inCariParent) inCariParent.value = ortu.nama;
                 }
                 
                 // Cari Nama Pasangan berdasarkan ID
                 if (data.idPasangan) {
-                    const pasangan = dataFull.keluarga.find(o => o.id == data.idPasangan);
-                    const inputCariPasangan = document.getElementById('inputCariPasangan');
-                    if (pasangan && inputCariPasangan) inputCariPasangan.value = pasangan.nama;
+                    const pasangan = dataFull.keluarga.find(o => String(o.id) === String(data.idPasangan));
+                    const inCariPasangan = document.getElementById('inputCariPasangan');
+                    if (pasangan && inCariPasangan) inCariPasangan.value = pasangan.nama;
                 }
 
                 // Tampilkan Foto
                 if (data.foto && data.foto.startsWith('data:image')) {
-                    const previewImage = document.getElementById('previewImage');
-                    const defaultIcon = document.getElementById('defaultIcon');
-                    if(previewImage && defaultIcon) {
-                        previewImage.src = data.foto;
-                        previewImage.classList.remove('hidden');
-                        defaultIcon.classList.add('hidden');
+                    const pImg = document.getElementById('previewImage');
+                    const dIcon = document.getElementById('defaultIcon');
+                    if(pImg && dIcon) {
+                        pImg.src = data.foto;
+                        pImg.classList.remove('hidden');
+                        dIcon.classList.add('hidden');
                     }
                 }
 
-                // Ganti judul halaman jadi Edit
+                // Ganti judul halaman
                 const h1 = document.querySelector('.header-curve h1');
                 if(h1) h1.innerText = "Edit Anggota";
             }
@@ -79,9 +85,9 @@
             }
 
             // Fitur Kapitalisasi Otomatis
-            const inputNama = document.getElementById('namaLengkap');
-            const inputAlamat = document.getElementById('domisili');
-            [inputNama, inputAlamat].forEach(input => {
+            const inNama = document.getElementById('namaLengkap');
+            const inAlamat = document.getElementById('domisili');
+            [inNama, inAlamat].forEach(input => {
                 if (input) {
                     input.addEventListener('input', function() {
                         const start = this.selectionStart;
@@ -92,8 +98,9 @@
             });
         });
 
-        // 5. Fungsi Kapitalisasi (RT/RW/Romawi)
+        // 5. Fungsi Kapitalisasi
         function buatKapital(str) {
+            if (!str) return "";
             let hasil = str.replace(/\b\w/g, char => char.toUpperCase());
             const singkatan = ["Rt", "Rw", "Diy", "Ii", "Iii", "Iv", "Vi", "Vii", "Viii", "Ix", "Xi", "Xii"];
             singkatan.forEach(k => {
@@ -104,31 +111,41 @@
         }
 
         // 6. Tombol Kembali
-        document.getElementById('btnBack').addEventListener('click', () => {
-            window.location.href = idAnggotaUrl ? 'cari-anggota.html' : 'index.html';
-        });
+        const btnB = document.getElementById('btnBack');
+        if (btnB) {
+            btnB.addEventListener('click', () => {
+                window.location.href = idAnggotaUrl ? 'cari-anggota.html' : 'index.html';
+            });
+        }
 
-        // 7. Logika Upload Foto (Resize & Compress)
-        document.getElementById('fotoAnggota').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        let w = 300; let h = (img.height / img.width) * w;
-                        canvas.width = w; canvas.height = h;
-                        ctx.drawImage(img, 0, 0, w, h);
-                        const b64 = canvas.toDataURL('image/jpeg', 0.7);
-                        document.getElementById('previewImage').src = b64;
-                        document.getElementById('previewImage').classList.remove('hidden');
-                        document.getElementById('defaultIcon').classList.add('hidden');
+        // 7. Logika Upload Foto
+        const fAnggota = document.getElementById('fotoAnggota');
+        if (fAnggota) {
+            fAnggota.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            let w = 300; let h = (img.height / img.width) * w;
+                            canvas.width = w; canvas.height = h;
+                            ctx.drawImage(img, 0, 0, w, h);
+                            const b64 = canvas.toDataURL('image/jpeg', 0.7);
+                            const pImg = document.getElementById('previewImage');
+                            const dIcon = document.getElementById('defaultIcon');
+                            if(pImg && dIcon) {
+                                pImg.src = b64;
+                                pImg.classList.remove('hidden');
+                                dIcon.classList.add('hidden');
+                            }
+                        };
+                        img.src = event.target.result;
                     };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
     </script>
