@@ -115,16 +115,33 @@
             return [];
         }
 
+        function getDaftarDariStorage() {
+            try {
+                const dataRaw = localStorage.getItem('dataCloud'); // Pastikan kuncinya 'dataCloud'
+                if (dataRaw) {
+                    const parsed = JSON.parse(dataRaw);
+                    // Pastikan mengambil properti .keluarga
+                    return parsed.keluarga || []; 
+                }
+            } catch (e) {
+                console.error("Gagal parse JSON storage:", e);
+            }
+            return [];
+        }
+
         async function muatDaftarAnggota() {
             const wadahDaftar = document.getElementById('wadahDaftar');
             const inputCari = document.getElementById('searchInput');
+            
+            // Ambil data yang ada sekarang
             let daftarKeluarga = getDaftarDariStorage();
 
-            // Kunci input dulu agar user tidak cari saat data sedang loading
-            inputCari.disabled = true;
-            inputCari.placeholder = "Menyiapkan data...";
-
+            // JIKA DATA KOSONG (0): Tarik paksa dari Google Sheets
             if (daftarKeluarga.length === 0) {
+                console.log("Storage kosong, menarik data dari Cloud...");
+                inputCari.disabled = true;
+                inputCari.placeholder = "Mengunduh data keluarga...";
+                
                 wadahDaftar.innerHTML = `
                     <div class="text-center mt-12 px-6">
                         <p class="text-cyan-500 font-bold animate-bounce text-sm">
@@ -133,10 +150,15 @@
                     </div>`;
                 
                 await sinkronisasiDataCloud();
-                daftarKeluarga = getDaftarDariStorage();
+                daftarKeluarga = getDaftarDariStorage(); // Ambil lagi setelah download
             }
 
-            dataSiap = true; // Data sekarang sudah siap di memori HP
+            // Jika masih kosong juga setelah download, berarti ada masalah di API/Sheet
+            if (daftarKeluarga.length === 0) {
+                console.error("Data tetap 0 setelah sinkronisasi cloud.");
+            }
+
+            dataSiap = true; 
             inputCari.disabled = false;
             inputCari.placeholder = "Cari nama anggota keluarga...";
             renderData(daftarKeluarga);
@@ -192,15 +214,16 @@
         }
 
         function filterAnggota() {
+            const dataRaw = localStorage.getItem('dataCloud');
+            console.log("Isi mentah dataCloud di storage:", dataRaw ? "Ada Isinya" : "KOSONG TOTAL");
             if (!dataSiap) return; // JANGAN cari kalau data belum siap di memori
-
-            console.log("Status dataSiap:", dataSiap); // Cek apakah sudah true
-            const daftarKeluarga = getDaftarDariStorage();
-            console.log("Jumlah data di storage:", daftarKeluarga.length); // Cek datanya ada tidak
 
             const inputElemen = document.getElementById('searchInput');
             const statusElemen = document.getElementById('statusPencarian');
             const input = inputElemen.value.toLowerCase().trim();
+
+            const daftarKeluarga = getDaftarDariStorage();
+            console.log("Berhasil mengambil " + daftarKeluarga.length + " anggota untuk difilter.");
             
             if (input.length > 0) {
                 if (statusElemen) statusElemen.classList.remove('hidden');
@@ -227,6 +250,10 @@
 
         document.getElementById('searchInput').addEventListener('input', filterAnggota);
         document.addEventListener('DOMContentLoaded', muatDaftarAnggota);
+
+        window.onload = () => {
+            muatDaftarAnggota();
+        };
     </script>
 </body>
 </html>
