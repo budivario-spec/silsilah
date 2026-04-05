@@ -1,28 +1,17 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <title>Cari Anggota - Silsilah Mbah Muntari</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4RDDKDQNKB"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-
-        gtag('config', 'G-4RDDKDQNKB');
-    </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .header-curve {
-            background: linear-gradient(135deg, #00e5ff 0%, #00acc1 100%);
-            height: 90px;
+            background-color: #00e5ff;
+            height: 100px;
             border-bottom-left-radius: 10% 30px;
             border-bottom-right-radius: 10% 30px;
             position: relative;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             color: white;
@@ -30,18 +19,12 @@
         }
         .btn-back {
             position: absolute;
-            left: 15px;
-            top: 35px;
-            background: rgba(39, 38, 38, 0.2);
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            left: 20px;
+            background: none;
+            border: none;
             color: white;
-            text-decoration: none;
-            font-weight: bold;
+            font-size: 24px;
+            cursor: pointer;
         }
         .search-container {
             margin-top: 20px;
@@ -77,166 +60,93 @@
 <body class="bg-gray-50 min-h-screen">
 
     <div class="header-curve">
-        <button id="btnBack" class="btn-back">←</button>
+        <button onclick="window.location.href='index.html'" class="btn-back">←</button>
         <h1 class="text-xl font-bold">Cari Anggota</h1>
     </div>
 
     <div class="search-container">
-        <input type="text" id="searchInput" placeholder="Cari nama anggota keluarga..." class="search-input">
-        <div id="statusPencarian" class="text-center mt-3 text-[11px] text-cyan-600 font-bold hidden">
-            <i class="fas fa-spinner fa-spin mr-1"></i> Sedang memeriksa daftar anggota...
-        </div>
+        <input type="text" id="searchInput" onkeyup="filterAnggota()" placeholder="Cari anggota keluarga..." class="search-input">
     </div>
 
     <div id="wadahDaftar" class="p-6 mt-2">
         </div>
 
-    <script src="config.js"></script> <script>
-        document.getElementById('btnBack').addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
-        
-        // 1. Fungsi Pembantu: Ambil data dari localStorage
-        function getDaftarDariStorage() {
-            const dataRaw = localStorage.getItem('dataCloud');
-            if (dataRaw) {
-                const parsed = JSON.parse(dataRaw);
-                return parsed.keluarga || []; 
-            }
-            return [];
-        }
-
-        // 2. Fungsi Utama: Cek lokal dulu, kalau kosong tarik dari Cloud
-        async function muatDaftarAnggota() {
+    <script>
+        // 1. Fungsi Utama: Muat data dari memori (dan Cloud jika ada)
+        function muatDaftarAnggota() {
             const wadahDaftar = document.getElementById('wadahDaftar');
-            let daftarKeluarga = getDaftarDariStorage();
+            const daftarKeluarga = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
 
-            // Jika data benar-benar kosong di memori HP
+            console.log("Memuat " + daftarKeluarga.length + " anggota keluarga.");
+
             if (daftarKeluarga.length === 0) {
                 wadahDaftar.innerHTML = `
                     <div class="text-center mt-12 px-6">
-                        <p class="text-cyan-500 font-bold animate-bounce text-sm">
-                           <i class="fas fa-cloud-download-alt mr-2"></i> Menghubungkan ke Google Sheets...
-                        </p>
+                        <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200">
+                            <p class="text-gray-500 italic">Belum ada anggota keluarga yang terdaftar.</p>
+                            <button onclick="window.location.href='tambah-anggota.html'" class="text-[#00e5ff] font-bold mt-3 underline">
+                                + Tambah Anggota Pertama
+                            </button>
+                        </div>
                     </div>`;
-                
-                await sinkronisasiDataCloud();
-                daftarKeluarga = getDaftarDariStorage();
+                return;
             }
 
             renderData(daftarKeluarga);
         }
 
-        // 3. Fungsi Sinkronisasi (Darurat jika localStorage kosong)
-        async function sinkronisasiDataCloud() {
-            try {
-                console.log("Mencoba tarik data dari Cloud...");
-                const response = await fetch(URL_API + "?t=" + Date.now());
-                const resJson = await response.json();
-                
-                if (resJson && resJson.keluarga) {
-                    localStorage.setItem('dataCloud', JSON.stringify(resJson));
-                    console.log("Sinkronisasi berhasil!");
-                }
-            } catch (err) {
-                console.error("Gagal sinkronisasi:", err);
-            }
-        }
-
-        // 4. Fungsi Render: Tampilkan Kartu
-        function renderData(data, isSearching = false) {
+        // 2. Fungsi Render: Mengubah data menjadi kartu visual
+        function renderData(data) {
             const wadahDaftar = document.getElementById('wadahDaftar');
-            
-            if (!data || (data.length === 0 && !isSearching)) {
-                wadahDaftar.innerHTML = `
-                    <div class="text-center mt-12 px-6">
-                        <div class="bg-red-50 p-6 rounded-2xl border-2 border-dashed border-red-200">
-                            <p class="text-gray-500 italic">Data tidak ditemukan atau koneksi internet bermasalah.</p>
-                            <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded-xl mt-3 text-sm">Coba Lagi</button>
-                        </div>
-                    </div>`;
-                return;
-            }
+            wadahDaftar.innerHTML = ''; 
 
-            if (data.length === 0 && isSearching) {
-                wadahDaftar.innerHTML = `
-                    <div class="text-center mt-12 px-6">
-                        <p class="text-gray-400 italic text-sm">Nama atau lokasi tidak ditemukan.</p>
-                    </div>`;
-                return;
-            }
-
-            // Urutkan Nama A-Z
-            const dataTerurut = [...data].sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
-
-            // Gunakan Map + Join agar render di HP jauh lebih ringan dan cepat
-            const htmlKartu = dataTerurut.map(anggota => {
+            data.forEach(anggota => {
+                // LOGIKA PENGAMAN: Jika foto benar-benar kosong/null (data lama)
+                // Berikan SVG secara langsung di sini sebagai cadangan terakhir
                 let sumberFoto = anggota.foto;
-                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "" || sumberFoto.length < 20) {
-                    sumberFoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(anggota.nama)}&background=00e5ff&color=fff`;
+                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "undefined" || sumberFoto === "") {
+                    sumberFoto = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><rect width='24' height='24' fill='%2300e5ff'/><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>`;
                 }
+
+                let elemenFoto = `<img src="${sumberFoto}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm mr-4" style="border-color: #00e5ff;">`;
 
                 let infoLahir = (anggota.tempatLahir || anggota.tanggalLahir) 
-                    ? `${anggota.tempatLahir || ''}, ${anggota.tanggalLahir || ''}`
+                    ? `${anggota.tempatLahir || '?'}, ${anggota.tanggalLahir || '?'}`
                     : "Data kelahiran belum diisi";
 
-                return `
+                wadahDaftar.innerHTML += `
                     <div class="member-card shadow-sm cursor-pointer hover:bg-gray-50 flex items-center p-4 bg-white mb-3 rounded-2xl border border-gray-100" 
                         onclick="window.location.href='tambah-anggota.html?id=${anggota.id}'">
-                        <img src="${sumberFoto}" class="w-14 h-14 rounded-full object-cover border-2 border-[#00e5ff] shadow-sm mr-4">
+                        
+                        ${elemenFoto}
+                        
                         <div class="flex-1">
-                            <h4 class="font-bold text-gray-800 text-md leading-tight">${anggota.nama}</h4>
-                            <p class="text-[10px] text-[#00e5ff] font-semibold mt-0.5 uppercase tracking-wide">${infoLahir}</p>
+                            <h4 class="font-bold text-gray-800 text-lg leading-tight">${anggota.nama}</h4>
+                            <p class="text-[11px] text-[#00e5ff] font-semibold mt-0.5 uppercase tracking-wide">${infoLahir}</p>
                             <p class="text-xs text-gray-400 mt-1 italic leading-tight">📍 ${anggota.domisili || 'Lokasi tidak diisi'}</p>
                         </div>
+
                         <div class="text-gray-300 ml-2">❯</div>
-                    </div>`;
-            }).join('');
-
-            wadahDaftar.innerHTML = htmlKartu; 
+                    </div>
+                `;
+            });
         }
 
-        // 5. Fitur Cari
-        let timeoutPencarian = null;
+        // 3. Fitur Cari: Filter otomatis saat mengetik
         function filterAnggota() {
-            const inputElemen = document.getElementById('searchInput');
-            const statusElemen = document.getElementById('statusPencarian'); // Pastikan ID ini ada di HTML
-            const input = inputElemen.value.toLowerCase().trim();
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const daftarKeluarga = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
             
-            // Tampilkan status jika elemennya ada
-            if (input.length > 0) {
-                if (statusElemen) statusElemen.classList.remove('hidden');
-            } else {
-                if (statusElemen) statusElemen.classList.add('hidden');
-                renderData(getDaftarDariStorage(), false);
-                return;
-            }
+            const hasilFilter = daftarKeluarga.filter(anggota => 
+                anggota.nama.toLowerCase().includes(input) || 
+                (anggota.domisili && anggota.domisili.toLowerCase().includes(input))
+            );
 
-            clearTimeout(timeoutPencarian);
-
-            timeoutPencarian = setTimeout(() => {
-                const daftarKeluarga = getDaftarDariStorage();
-                
-                const hasilFilter = daftarKeluarga.filter(anggota => {
-                    const nama = (anggota.nama || "").toLowerCase();
-                    const domisili = (anggota.domisili || "").toLowerCase();
-                    // Mencari di nama ATAU domisili
-                    return nama.includes(input) || domisili.includes(input);
-                });
-
-                if (statusElemen) statusElemen.classList.add('hidden');
-                renderData(hasilFilter, true);
-            }, 400); // 400ms cukup untuk memberi waktu user mengetik di HP
+            renderData(hasilFilter);
         }
 
-        // Tambahkan ini di bagian bawah script agar lebih peka di HP
-        document.getElementById('searchInput').addEventListener('input', filterAnggota);
-
-        // Jalankan saat halaman dibuka
-        // Jalankan saat dokumen siap
-        document.addEventListener('DOMContentLoaded', () => {
-            muatDaftarAnggota();
-        });
+        // Jalankan otomatis
+        window.onload = muatDaftarAnggota;
     </script>
 </body>
 </html>
