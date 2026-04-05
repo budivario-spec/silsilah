@@ -1,17 +1,27 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <title>Cari Anggota - Silsilah Mbah Muntari</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4RDDKDQNKB"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-4RDDKDQNKB');
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .header-curve {
-            background-color: #00e5ff;
-            height: 100px;
+            background: linear-gradient(135deg, #00e5ff 0%, #00acc1 100%);
+            height: 90px;
             border-bottom-left-radius: 10% 30px;
             border-bottom-right-radius: 10% 30px;
             position: relative;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             color: white;
@@ -19,12 +29,18 @@
         }
         .btn-back {
             position: absolute;
-            left: 20px;
-            background: none;
-            border: none;
+            left: 15px;
+            top: 35px;
+            background: rgba(39, 38, 38, 0.2);
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            font-size: 24px;
-            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
         }
         .search-container {
             margin-top: 20px;
@@ -65,50 +81,82 @@
     </div>
 
     <div class="search-container">
-        <input type="text" id="searchInput" onkeyup="filterAnggota()" placeholder="Cari anggota keluarga..." class="search-input">
+        <input type="text" id="searchInput" onkeyup="filterAnggota()" placeholder="Cari nama anggota keluarga..." class="search-input">
     </div>
 
     <div id="wadahDaftar" class="p-6 mt-2">
         </div>
 
-    <script>
-        // 1. Fungsi Utama: Muat data dari memori (dan Cloud jika ada)
-        function muatDaftarAnggota() {
+    <script src="config.js"></script> <script>
+        // 1. Fungsi Pembantu: Ambil data dari localStorage
+        function getDaftarDariStorage() {
+            const dataRaw = localStorage.getItem('dataCloud');
+            if (dataRaw) {
+                const parsed = JSON.parse(dataRaw);
+                return parsed.keluarga || []; 
+            }
+            return [];
+        }
+
+        // 2. Fungsi Utama: Cek lokal dulu, kalau kosong tarik dari Cloud
+        async function muatDaftarAnggota() {
             const wadahDaftar = document.getElementById('wadahDaftar');
-            const daftarKeluarga = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            let daftarKeluarga = getDaftarDariStorage();
 
-            console.log("Memuat " + daftarKeluarga.length + " anggota keluarga.");
-
+            // JIKA DATA KOSONG (setelah clear cache)
             if (daftarKeluarga.length === 0) {
                 wadahDaftar.innerHTML = `
                     <div class="text-center mt-12 px-6">
-                        <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200">
-                            <p class="text-gray-500 italic">Belum ada anggota keluarga yang terdaftar.</p>
-                            <button onclick="window.location.href='tambah-anggota.html'" class="text-[#00e5ff] font-bold mt-3 underline">
-                                + Tambah Anggota Pertama
-                            </button>
-                        </div>
+                        <p class="text-gray-400 animate-pulse">Sedang sinkronisasi data keluarga...</p>
                     </div>`;
-                return;
+                
+                // Panggil fungsi tarik data dari internet
+                await sinkronisasiDataCloud();
+                daftarKeluarga = getDaftarDariStorage(); // Ambil lagi setelah download selesai
             }
 
             renderData(daftarKeluarga);
         }
 
-        // 2. Fungsi Render: Mengubah data menjadi kartu visual
+        // 3. Fungsi Sinkronisasi (Darurat jika localStorage kosong)
+        async function sinkronisasiDataCloud() {
+            try {
+                console.log("Mencoba tarik data dari Cloud...");
+                const response = await fetch(URL_API + "?t=" + Date.now());
+                const resJson = await response.json();
+                
+                if (resJson && resJson.keluarga) {
+                    localStorage.setItem('dataCloud', JSON.stringify(resJson));
+                    console.log("Sinkronisasi berhasil!");
+                }
+            } catch (err) {
+                console.error("Gagal sinkronisasi:", err);
+            }
+        }
+
+        // 4. Fungsi Render: Tampilkan Kartu
         function renderData(data) {
             const wadahDaftar = document.getElementById('wadahDaftar');
+            
+            if (!data || data.length === 0) {
+                wadahDaftar.innerHTML = `
+                    <div class="text-center mt-12 px-6">
+                        <div class="bg-red-50 p-6 rounded-2xl border-2 border-dashed border-red-200">
+                            <p class="text-gray-500 italic">Data tidak ditemukan atau koneksi internet bermasalah.</p>
+                            <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded-xl mt-3 text-sm">Coba Lagi</button>
+                        </div>
+                    </div>`;
+                return;
+            }
+
             wadahDaftar.innerHTML = ''; 
+            const dataTerurut = [...data].sort((a, b) => a.nama.localeCompare(b.nama));
 
-            data.forEach(anggota => {
-                // LOGIKA PENGAMAN: Jika foto benar-benar kosong/null (data lama)
-                // Berikan SVG secara langsung di sini sebagai cadangan terakhir
+            dataTerurut.forEach(anggota => {
                 let sumberFoto = anggota.foto;
-                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "undefined" || sumberFoto === "") {
-                    sumberFoto = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><rect width='24' height='24' fill='%2300e5ff'/><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>`;
+                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "" || sumberFoto.includes('127.0.0.1')) {
+                    sumberFoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(anggota.nama)}&background=00e5ff&color=fff`;
                 }
-
-                let elemenFoto = `<img src="${sumberFoto}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm mr-4" style="border-color: #00e5ff;">`;
 
                 let infoLahir = (anggota.tempatLahir || anggota.tanggalLahir) 
                     ? `${anggota.tempatLahir || '?'}, ${anggota.tanggalLahir || '?'}`
@@ -117,27 +165,23 @@
                 wadahDaftar.innerHTML += `
                     <div class="member-card shadow-sm cursor-pointer hover:bg-gray-50 flex items-center p-4 bg-white mb-3 rounded-2xl border border-gray-100" 
                         onclick="window.location.href='tambah-anggota.html?id=${anggota.id}'">
-                        
-                        ${elemenFoto}
-                        
+                        <img src="${sumberFoto}" class="w-14 h-14 rounded-full object-cover border-2 border-[#00e5ff] shadow-sm mr-4">
                         <div class="flex-1">
-                            <h4 class="font-bold text-gray-800 text-lg leading-tight">${anggota.nama}</h4>
-                            <p class="text-[11px] text-[#00e5ff] font-semibold mt-0.5 uppercase tracking-wide">${infoLahir}</p>
+                            <h4 class="font-bold text-gray-800 text-md leading-tight">${anggota.nama}</h4>
+                            <p class="text-[10px] text-[#00e5ff] font-semibold mt-0.5 uppercase tracking-wide">${infoLahir}</p>
                             <p class="text-xs text-gray-400 mt-1 italic leading-tight">📍 ${anggota.domisili || 'Lokasi tidak diisi'}</p>
                         </div>
-
                         <div class="text-gray-300 ml-2">❯</div>
-                    </div>
-                `;
+                    </div>`;
             });
         }
 
-        // 3. Fitur Cari: Filter otomatis saat mengetik
+        // 5. Fitur Cari
         function filterAnggota() {
             const input = document.getElementById('searchInput').value.toLowerCase();
-            const daftarKeluarga = JSON.parse(localStorage.getItem('daftarKeluarga')) || [];
+            const dataLengkap = getDaftarDariStorage();
             
-            const hasilFilter = daftarKeluarga.filter(anggota => 
+            const hasilFilter = dataLengkap.filter(anggota => 
                 anggota.nama.toLowerCase().includes(input) || 
                 (anggota.domisili && anggota.domisili.toLowerCase().includes(input))
             );
@@ -145,7 +189,7 @@
             renderData(hasilFilter);
         }
 
-        // Jalankan otomatis
+        // Jalankan saat halaman dibuka
         window.onload = muatDaftarAnggota;
     </script>
 </body>
