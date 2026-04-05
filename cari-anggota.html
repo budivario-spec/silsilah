@@ -129,18 +129,23 @@
         // 3. Fungsi Filter (Dibuat sangat teliti)
         function filterAnggota() {
             const input = document.getElementById('searchInput').value.toLowerCase().trim();
-            const dataLengkap = getDaftarData();
             
-            // Balikkan ke daftar awal jika input dihapus
+            // AMBIL DATA DARI BRANKAS HP (Bukan dari variabel global)
+            const dataRaw = localStorage.getItem('dataCloud');
+            if (!dataRaw) return;
+            
+            const resJson = JSON.parse(dataRaw);
+            const daftar = resJson.keluarga || [];
+
             if (input === "") {
-                renderData(dataLengkap, false);
+                renderData(daftar, false);
                 return;
             }
 
-            const hasilFilter = dataLengkap.filter(a => {
-                const nama = (a.nama || a.Nama || a.nama_lengkap || "").toString().toLowerCase();
-                const domisili = (a.domisili || a.Domisili || "").toString().toLowerCase();
-                return nama.includes(input) || domisili.includes(input);
+            const hasilFilter = daftar.filter(a => {
+                // Cek kolom 'nama' atau 'Nama' (karena Google Sheet sering otomatis kapital)
+                const nama = (a.nama || a.Nama || "").toString().toLowerCase();
+                return nama.includes(input);
             });
 
             renderData(hasilFilter, true);

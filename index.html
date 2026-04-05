@@ -331,29 +331,23 @@
         let swiperInstance;
 
         // --- 2. INITIAL LOAD ---
-        window.addEventListener('load', async () => { // Tambahkan 'async' di sini
-            // 1. Cek apakah user perlu login
+        window.addEventListener('DOMContentLoaded', () => { // Gunakan DOMContentLoaded agar lebih cepat
+            // 1. Cek identitas
             cekIdentitas();
-
-            // 2. Tampilkan sapaan di Dashboard
             tampilkanSapaan(); 
 
-            // 3. Update data jika sudah login
-            if (localStorage.getItem('userNama')) {
-                document.body.style.overflow = 'auto';
-                
-                // Tampilkan data yang ada di memori hp dulu (biar tidak kosong)
-                perbaruiDashboardLokal(); 
-                
-                // Tarik data terbaru dari Cloud dan tunggu sampai selesai (await)
-                await perbaruiDashboardCloud(); 
-                
-                // Update dashboard lagi dengan data yang baru saja didownload
+            // 2. LANGSUNG TAMPILKAN DATA DARI HP (Anti 0)
+            if (localStorage.getItem('dataCloud')) {
                 perbaruiDashboardLokal(); 
             }
-            
-            // 4. Atur scroll body
-            document.body.style.overflowY = (document.body.scrollHeight <= window.innerHeight) ? 'hidden' : 'auto';
+
+            // 3. Jalankan download cloud di latar belakang
+            if (localStorage.getItem('userNama')) {
+                perbaruiDashboardCloud().then(() => {
+                    // Setelah download selesai, refresh angka di layar sekali lagi
+                    perbaruiDashboardLokal();
+                });
+            }
         });
 
         // --- 3. LOGIKA IDENTITAS & AUTOCOMPLETE ---
