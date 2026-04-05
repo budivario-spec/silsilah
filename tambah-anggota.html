@@ -246,6 +246,46 @@
 
     <script src="config.js"></script> 
     <script>
+        // 1. Ambil ID dari alamat URL (misal: ?id=10)
+        const urlParams = new URLSearchParams(window.location.search);
+        const idAnggotaUrl = urlParams.get('id');
+
+        // 2. Fungsi untuk mengisi form otomatis jika ada ID
+        function isiFormOtomatis() {
+            if (!idAnggotaUrl) return; // Jika tidak ada ID (berarti tambah baru), stop.
+
+            const dataRaw = localStorage.getItem('dataCloud');
+            if (dataRaw) {
+                const resJson = JSON.parse(dataRaw);
+                const daftarKeluarga = resJson.keluarga || [];
+                
+                // Cari data anggota yang ID-nya cocok
+                const anggota = daftarKeluarga.find(a => a.id == idAnggotaUrl);
+
+                if (anggota) {
+                    console.log("Data ditemukan, mengisi form...");
+                    // Isi Nama
+                    if(document.getElementById('namaLengkap')) 
+                        document.getElementById('namaLengkap').value = anggota.nama || "";
+                    // Isi Domisili/Alamat
+                    if(document.getElementById('domisili')) 
+                        document.getElementById('domisili').value = anggota.domisili || "";
+                    // Isi Status (Sesuaikan ID element-nya)
+                    if(document.getElementById('statusKeluarga')) 
+                        document.getElementById('statusKeluarga').value = anggota.status || "";
+                    
+                    // Ganti Judul Halaman jadi "Edit" bukan "Tambah"
+                    const judulHalaman = document.querySelector('.header-curve h1');
+                    if(judulHalaman) judulHalaman.innerText = "Edit Anggota";
+                } else {
+                    console.error("Anggota dengan ID tersebut tidak ditemukan di storage.");
+                }
+            }
+        }
+
+        // Jalankan saat halaman selesai dimuat
+        document.addEventListener('DOMContentLoaded', isiFormOtomatis);
+
         const fileInput = document.getElementById('fileInput');
         const previewImage = document.getElementById('profilePreview');
         const defaultIcon = document.getElementById('defaultIcon');
@@ -253,7 +293,6 @@
         const groupRelasi = document.getElementById('groupRelasi');
         const groupPasangan = document.getElementById('groupPasangan');
         
-        const urlParams = new URLSearchParams(window.location.search);
         const idAnggotaEdit = urlParams.get('id');
 
         // 1. Fungsi Pembantu: Ambil data dari key 'dataCloud'

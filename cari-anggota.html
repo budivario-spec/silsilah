@@ -171,10 +171,16 @@
 
         function renderData(data, isSearching = false) {
             const wadahDaftar = document.getElementById('wadahDaftar');
-            if (!data || (data.length === 0 && !isSearching)) return;
+            
+            // Jika kotak pencarian kosong (isSearching false), tampilkan semua data yang ada
+            if (!isSearching && (!data || data.length === 0)) {
+                wadahDaftar.innerHTML = `<div class="text-center mt-12"><p class="text-gray-400">Memuat data...</p></div>`;
+                return;
+            }
 
-            if (data.length === 0 && isSearching) {
-                wadahDaftar.innerHTML = `<p class="text-center text-gray-400 mt-10 text-sm italic">Nama tidak ditemukan.</p>`;
+            // Jika sedang mencari tapi tidak ketemu
+            if (isSearching && data.length === 0) {
+                wadahDaftar.innerHTML = `<p class="text-center text-gray-400 mt-10 italic">Nama tidak ditemukan.</p>`;
                 return;
             }
 
@@ -184,9 +190,12 @@
                 if (!sumberFoto || sumberFoto.length < 20) {
                     sumberFoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(anggota.nama)}&background=00e5ff&color=fff`;
                 }
+                // Pastikan 'id' ada di Google Sheet Om, jika tidak ada gunakan 'nama' sebagai ID sementara
+                const idAnggota = anggota.id || encodeURIComponent(anggota.nama);
+                
                 return `
                     <div class="member-card shadow-sm flex items-center p-4 bg-white mb-3 rounded-2xl border border-gray-100" 
-                        onclick="window.location.href='tambah-anggota.html?id=${anggota.id}'">
+                        onclick="window.location.href='tambah-anggota.html?id=${idAnggota}'">
                         <img src="${sumberFoto}" class="w-14 h-14 rounded-full object-cover border-2 border-[#00e5ff] mr-4">
                         <div class="flex-1">
                             <h4 class="font-bold text-gray-800 text-md leading-tight">${anggota.nama}</h4>
@@ -200,19 +209,18 @@
         }
 
         function filterAnggota() {
-            if (!dataSiap) return;
-
             const inputElemen = document.getElementById('searchInput');
             const statusElemen = document.getElementById('statusPencarian');
             const input = inputElemen.value.toLowerCase().trim();
             
-            if (input.length > 0) {
-                if (statusElemen) statusElemen.classList.remove('hidden');
-            } else {
+            // Jika kosong, langsung tampilkan semua tanpa delay
+            if (input.length === 0) {
                 if (statusElemen) statusElemen.classList.add('hidden');
                 renderData(getDaftarDariStorage(), false);
                 return;
             }
+
+            if (statusElemen) statusElemen.classList.remove('hidden');
 
             clearTimeout(timeoutPencarian);
             timeoutPencarian = setTimeout(() => {
@@ -225,11 +233,15 @@
 
                 if (statusElemen) statusElemen.classList.add('hidden');
                 renderData(hasilFilter, true);
-            }, 500); 
+            }, 300); 
         }
 
         document.getElementById('searchInput').addEventListener('input', filterAnggota);
         window.addEventListener('load', muatDaftarAnggota);
+
+        window.onload = () => {
+            muatDaftarAnggota();
+        };
     </script>
 </body>
 </html>
