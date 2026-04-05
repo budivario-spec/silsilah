@@ -9,10 +9,10 @@
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-
         gtag('config', 'G-4RDDKDQNKB');
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .header-curve {
             background: linear-gradient(135deg, #00e5ff 0%, #00acc1 100%);
@@ -40,37 +40,12 @@
             justify-content: center;
             color: white;
             text-decoration: none;
-            font-weight: bold;
         }
-        .search-container {
-            margin-top: 20px;
-            padding: 0 24px;
+        /* Style Dropdown Saran */
+        #listSaranNama {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
-        .search-input {
-            width: 100%;
-            padding: 12px 20px;
-            border-radius: 25px;
-            border: 1px solid #e0e0e0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            outline: none;
-        }
-        .search-input:focus {
-            border-color: #00e5ff;
-        }
-        .member-card {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            background: white;
-            border-radius: 15px;
-            margin-bottom: 12px;
-            border: 1px solid #f0f0f0;
-            transition: transform 0.2s;
-        }
-        .member-card:active {
-            transform: scale(0.98);
-            background-color: #f9f9f9;
-        }
+        .saran-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -80,15 +55,30 @@
         <h1 class="text-xl font-bold">Cari Anggota</h1>
     </div>
 
-    <div class="search-container">
-        <input type="text" id="searchInput" onkeyup="filterAnggota()" placeholder="Cari nama anggota keluarga..." class="search-input">
+    <div class="px-6 mt-6 relative">
+        <div class="relative">
+            <input type="text" id="searchInput" oninput="filterAnggota()" 
+                   placeholder="Ketik nama keluarga..." 
+                   class="w-full bg-white border-2 border-gray-100 rounded-2xl py-4 px-6 shadow-sm focus:outline-none focus:border-[#00e5ff] transition-all"
+                   autocomplete="off">
+            
+            <div id="listSaranNama" class="absolute left-0 right-0 top-[110%] bg-white border border-gray-100 rounded-2xl z-50 max-h-60 overflow-y-auto hidden">
+                <div id="kontenSaran"></div>
+            </div>
+        </div>
     </div>
 
-    <div id="wadahDaftar" class="p-6 mt-2">
+    <div class="px-6 mt-8 flex justify-between items-center">
+        <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest">Daftar Keluarga</h2>
+        <span id="jumlahData" class="text-[10px] bg-cyan-100 text-cyan-600 px-2 py-1 rounded-full font-bold">0 Anggota</span>
+    </div>
+
+    <div id="wadahDaftar" class="p-6">
         </div>
 
-    <script src="config.js"></script> <script>
-        // 1. Fungsi Pembantu: Ambil data dari localStorage
+    <script src="config.js"></script>
+    <script>
+        // 1. Ambil Data Lokal
         function getDaftarDariStorage() {
             const dataRaw = localStorage.getItem('dataCloud');
             if (dataRaw) {
@@ -98,63 +88,78 @@
             return [];
         }
 
-        // 2. Fungsi Utama: Cek lokal dulu, kalau kosong tarik dari Cloud
-        async function muatDaftarAnggota() {
-            const wadahDaftar = document.getElementById('wadahDaftar');
-            let daftarKeluarga = getDaftarDariStorage();
-
-            // JIKA DATA KOSONG (setelah clear cache)
-            if (daftarKeluarga.length === 0) {
-                wadahDaftar.innerHTML = `
-                    <div class="text-center mt-12 px-6">
-                        <p class="text-gray-400 animate-pulse">Sedang sinkronisasi data keluarga...</p>
-                    </div>`;
-                
-                // Panggil fungsi tarik data dari internet
-                await sinkronisasiDataCloud();
-                daftarKeluarga = getDaftarDariStorage(); // Ambil lagi setelah download selesai
-            }
-
-            renderData(daftarKeluarga);
-        }
-
-        // 3. Fungsi Sinkronisasi (Darurat jika localStorage kosong)
-        async function sinkronisasiDataCloud() {
-            try {
-                console.log("Mencoba tarik data dari Cloud...");
-                const response = await fetch(URL_API + "?t=" + Date.now());
-                const resJson = await response.json();
-                
-                if (resJson && resJson.keluarga) {
-                    localStorage.setItem('dataCloud', JSON.stringify(resJson));
-                    console.log("Sinkronisasi berhasil!");
-                }
-            } catch (err) {
-                console.error("Gagal sinkronisasi:", err);
-            }
-        }
-
-        // 4. Fungsi Render: Tampilkan Kartu
-        function renderData(data) {
-            const wadahDaftar = document.getElementById('wadahDaftar');
+        // 2. Fungsi Filter & Saran Otomatis
+        function filterAnggota() {
+            const input = document.getElementById('searchInput');
+            const listSaran = document.getElementById('listSaranNama');
+            const kontenSaran = document.getElementById('kontenSaran');
+            const kataKunci = input.value.toLowerCase().trim();
             
-            if (!data || data.length === 0) {
-                wadahDaftar.innerHTML = `
-                    <div class="text-center mt-12 px-6">
-                        <div class="bg-red-50 p-6 rounded-2xl border-2 border-dashed border-red-200">
-                            <p class="text-gray-500 italic">Data tidak ditemukan atau koneksi internet bermasalah.</p>
-                            <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded-xl mt-3 text-sm">Coba Lagi</button>
+            const daftarKeluarga = getDaftarDariStorage();
+
+            // Jika input kosong, sembunyikan saran dan tampilkan semua kartu
+            if (kataKunci.length === 0) {
+                listSaran.classList.add('hidden');
+                renderData(daftarKeluarga);
+                return;
+            }
+
+            // Filter data yang cocok
+            const hasilFilter = daftarKeluarga.filter(a => 
+                (a.nama || "").toLowerCase().includes(kataKunci) ||
+                (a.domisili || "").toLowerCase().includes(kataKunci)
+            );
+
+            // TAMPILKAN DROPDOWN SARAN (Hanya jika ada hasil)
+            if (hasilFilter.length > 0 && kataKunci.length >= 2) {
+                listSaran.classList.remove('hidden');
+                kontenSaran.innerHTML = hasilFilter.slice(0, 10).map(a => `
+                    <div class="saran-item p-4 hover:bg-cyan-50 cursor-pointer border-b border-gray-50 flex items-center transition-colors"
+                         onclick="pilihAnggota('${a.id}')">
+                        <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-cyan-500 text-xs"></i>
                         </div>
+                        <div>
+                            <div class="text-sm font-bold text-gray-700">${a.nama}</div>
+                            <div class="text-[10px] text-gray-400">${a.domisili || 'Lokasi belum diisi'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                listSaran.classList.add('hidden');
+            }
+
+            // Tetap update daftar kartu di bawah agar sinkron
+            renderData(hasilFilter);
+        }
+
+        // 3. Fungsi Saat Saran diklik
+        function pilihAnggota(id) {
+            window.location.href = `tambah-anggota.html?id=${id}`;
+        }
+
+        // 4. Fungsi Render Kartu
+        function renderData(data) {
+            const wadah = document.getElementById('wadahDaftar');
+            const jumlahEl = document.getElementById('jumlahData');
+            
+            jumlahEl.innerText = `${data.length} Anggota`;
+
+            if (data.length === 0) {
+                wadah.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-search text-gray-200 text-5xl mb-4"></i>
+                        <p class="text-gray-400 italic">Nama tidak ditemukan...</p>
                     </div>`;
                 return;
             }
 
-            wadahDaftar.innerHTML = ''; 
-            const dataTerurut = [...data].sort((a, b) => a.nama.localeCompare(b.nama));
+            // Urutkan Abjad
+            const dataTerurut = [...data].sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
 
-            dataTerurut.forEach(anggota => {
+            wadah.innerHTML = dataTerurut.map(anggota => {
                 let sumberFoto = anggota.foto;
-                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "" || sumberFoto.includes('127.0.0.1')) {
+                if (!sumberFoto || sumberFoto.length < 20) {
                     sumberFoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(anggota.nama)}&background=00e5ff&color=fff`;
                 }
 
@@ -162,35 +167,33 @@
                     ? `${anggota.tempatLahir || '?'}, ${anggota.tanggalLahir || '?'}`
                     : "Data kelahiran belum diisi";
 
-                wadahDaftar.innerHTML += `
-                    <div class="member-card shadow-sm cursor-pointer hover:bg-gray-50 flex items-center p-4 bg-white mb-3 rounded-2xl border border-gray-100" 
-                        onclick="window.location.href='tambah-anggota.html?id=${anggota.id}'">
-                        <img src="${sumberFoto}" class="w-14 h-14 rounded-full object-cover border-2 border-[#00e5ff] shadow-sm mr-4">
+                return `
+                    <div class="flex items-center p-4 bg-white mb-4 rounded-3xl border border-gray-100 shadow-sm active:scale-95 transition-all" 
+                         onclick="pilihAnggota('${anggota.id}')">
+                        <img src="${sumberFoto}" class="w-14 h-14 rounded-2xl object-cover border-2 border-cyan-50 shadow-sm mr-4">
                         <div class="flex-1">
                             <h4 class="font-bold text-gray-800 text-md leading-tight">${anggota.nama}</h4>
-                            <p class="text-[10px] text-[#00e5ff] font-semibold mt-0.5 uppercase tracking-wide">${infoLahir}</p>
-                            <p class="text-xs text-gray-400 mt-1 italic leading-tight">📍 ${anggota.domisili || 'Lokasi tidak diisi'}</p>
+                            <p class="text-[10px] text-cyan-500 font-bold mt-1 uppercase tracking-wider">${infoLahir}</p>
+                            <p class="text-[11px] text-gray-400 mt-1 flex items-center">
+                                <i class="fas fa-map-marker-alt mr-1 text-gray-300"></i> ${anggota.domisili || 'Lokasi belum diisi'}
+                            </p>
                         </div>
-                        <div class="text-gray-300 ml-2">❯</div>
+                        <div class="text-gray-200"><i class="fas fa-chevron-right"></i></div>
                     </div>`;
-            });
+            }).join('');
         }
 
-        // 5. Fitur Cari
-        function filterAnggota() {
-            const input = document.getElementById('searchInput').value.toLowerCase();
-            const dataLengkap = getDaftarDariStorage();
-            
-            const hasilFilter = dataLengkap.filter(anggota => 
-                anggota.nama.toLowerCase().includes(input) || 
-                (anggota.domisili && anggota.domisili.toLowerCase().includes(input))
-            );
+        // Jalankan saat pertama buka
+        window.onload = () => {
+            renderData(getDaftarDariStorage());
+        };
 
-            renderData(hasilFilter);
-        }
-
-        // Jalankan saat halaman dibuka
-        window.onload = muatDaftarAnggota;
+        // Klik di luar saran untuk menutup dropdown
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('searchInput').contains(e.target)) {
+                document.getElementById('listSaranNama').classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>
