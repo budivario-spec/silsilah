@@ -13,6 +13,7 @@
         gtag('config', 'G-4RDDKDQNKB');
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .header-curve {
             background: linear-gradient(135deg, #00e5ff 0%, #00acc1 100%);
@@ -82,15 +83,13 @@
 
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="Cari nama anggota keluarga..." class="search-input">
+        <div id="statusPencarian" class="text-center mt-3 text-[11px] text-cyan-600 font-bold hidden">
+            <i class="fas fa-spinner fa-spin mr-1"></i> Sedang memeriksa daftar anggota...
+        </div>
     </div>
 
     <div id="wadahDaftar" class="p-6 mt-2">
         </div>
-
-    <div class="search-container">
-        <input type="text" id="searchInput" placeholder="Cari nama anggota keluarga..." class="search-input">
-        <div id="statusPencarian" class="text-center mt-2 text-[10px] text-cyan-600 font-bold hidden"></div>
-    </div>
 
     <script src="config.js"></script> <script>
         document.getElementById('btnBack').addEventListener('click', () => {
@@ -199,42 +198,35 @@
 
         // 5. Fitur Cari
         let timeoutPencarian = null;
-
         function filterAnggota() {
             const inputElemen = document.getElementById('searchInput');
-            const statusElemen = document.getElementById('statusPencarian');
+            const statusElemen = document.getElementById('statusPencarian'); // Pastikan ID ini ada di HTML
             const input = inputElemen.value.toLowerCase().trim();
             
-            // Tampilkan status "Sedang memeriksa"
+            // Tampilkan status jika elemennya ada
             if (input.length > 0) {
-                statusElemen.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> Sedang memeriksa daftar anggota...`;
-                statusElemen.classList.remove('hidden');
+                if (statusElemen) statusElemen.classList.remove('hidden');
             } else {
-                statusElemen.classList.add('hidden');
-                const daftarKeluarga = getDaftarDariStorage();
-                renderData(daftarKeluarga, false);
+                if (statusElemen) statusElemen.classList.add('hidden');
+                renderData(getDaftarDariStorage(), false);
                 return;
             }
 
-            // Hapus timeout sebelumnya (Debounce) agar tidak berat di HP
             clearTimeout(timeoutPencarian);
 
-            // Beri jeda 300ms sebelum mulai mencari
             timeoutPencarian = setTimeout(() => {
                 const daftarKeluarga = getDaftarDariStorage();
                 
                 const hasilFilter = daftarKeluarga.filter(anggota => {
                     const nama = (anggota.nama || "").toLowerCase();
                     const domisili = (anggota.domisili || "").toLowerCase();
+                    // Mencari di nama ATAU domisili
                     return nama.includes(input) || domisili.includes(input);
                 });
 
-                // Sembunyikan status setelah selesai
-                statusElemen.classList.add('hidden');
-                
-                // Tampilkan hasil
+                if (statusElemen) statusElemen.classList.add('hidden');
                 renderData(hasilFilter, true);
-            }, 300); 
+            }, 400); // 400ms cukup untuk memberi waktu user mengetik di HP
         }
 
         // Tambahkan ini di bagian bawah script agar lebih peka di HP
