@@ -12,9 +12,7 @@
 
         gtag('config', 'G-4RDDKDQNKB');
     </script>
-    <script src="config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .header-curve {
             background: linear-gradient(135deg, #00e5ff 0%, #00acc1 100%);
@@ -78,163 +76,104 @@
 <body class="bg-gray-50 min-h-screen">
 
     <div class="header-curve">
-        <button id="btnBack" class="btn-back">←</button>
+        <button onclick="window.location.href='index.html'" class="btn-back">←</button>
         <h1 class="text-xl font-bold">Cari Anggota</h1>
     </div>
 
     <div class="search-container">
-        <input type="text" id="searchInput" placeholder="Cari nama anggota keluarga..." class="search-input">
-        <div id="statusPencarian" class="text-center mt-3 text-[11px] text-cyan-600 font-bold hidden">
-            <i class="fas fa-spinner fa-spin mr-1"></i> Sedang memeriksa daftar anggota...
-        </div>
+        <input type="text" id="searchInput" onkeyup="filterAnggota()" placeholder="Cari anggota keluarga..." class="search-input">
     </div>
 
     <div id="wadahDaftar" class="p-6 mt-2">
         </div>
 
-     
-    <script src="config.js"></script>
     <script>
-        let dataSiap = false;
-        let timeoutPencarian = null;
-
-        document.getElementById('btnBack').addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
-        
-        // 1. Fungsi Ambil Data: Lebih kuat dalam mendeteksi struktur JSON
+    // 1. Fungsi Pembantu: Mengambil array keluarga dari objek dataCloud
         function getDaftarDariStorage() {
-            try {
-                const dataRaw = localStorage.getItem('dataCloud');
-                if (dataRaw) {
-                    const parsed = JSON.parse(dataRaw);
-                    // Cek apakah datanya ada di dalam properti 'keluarga' atau langsung array
-                    return parsed.keluarga || (Array.isArray(parsed) ? parsed : []); 
-                }
-            } catch (e) {
-                console.error("Gagal baca storage:", e);
+            const dataRaw = localStorage.getItem('dataCloud');
+            if (dataRaw) {
+                const parsed = JSON.parse(dataRaw);
+                // Ambil properti .keluarga karena dataCloud isinya {keluarga: [], iklan: []}
+                return parsed.keluarga || []; 
             }
             return [];
         }
 
-        // 2. Fungsi Utama: Pastikan data benar-benar ada sebelum bisa diketik
-        async function muatDaftarAnggota() {
+        // 2. Fungsi Utama: Muat data dan tampilkan
+        function muatDaftarAnggota() {
             const wadahDaftar = document.getElementById('wadahDaftar');
-            const inputCari = document.getElementById('searchInput');
-            
-            let daftarKeluarga = getDaftarDariStorage();
+            const daftarKeluarga = getDaftarDariStorage();
 
-            // Jika masih kosong, coba tarik dari Cloud (Sync ulang)
+            console.log("Memuat " + daftarKeluarga.length + " anggota keluarga.");
+
             if (daftarKeluarga.length === 0) {
-                console.log("Data kosong, mencoba tarik dari Cloud...");
-                inputCari.disabled = true;
-                inputCari.placeholder = "Menghubungkan ke pusat...";
-                
                 wadahDaftar.innerHTML = `
                     <div class="text-center mt-12 px-6">
-                        <p class="text-cyan-500 font-bold animate-bounce text-sm">
-                           <i class="fas fa-cloud-download-alt mr-2"></i> Mengabsen Anggota...
-                        </p>
-                    </div>`;
-                
-                await sinkronisasiDataCloud();
-                daftarKeluarga = getDaftarDariStorage();
-            }
-
-            if (daftarKeluarga.length > 0) {
-                dataSiap = true;
-                inputCari.disabled = false;
-                inputCari.placeholder = "Cari nama anggota keluarga...";
-                renderData(daftarKeluarga);
-            } else {
-                wadahDaftar.innerHTML = `<div class="text-center mt-12 text-gray-400">Data gagal dimuat. Coba kembali ke Beranda dulu Om.</div>`;
-            }
-        }
-
-        async function sinkronisasiDataCloud() {
-            try {
-                const response = await fetch(URL_API + "?t=" + Date.now());
-                const resJson = await response.json();
-                if (resJson && (resJson.keluarga || Array.isArray(resJson))) {
-                    localStorage.setItem('dataCloud', JSON.stringify(resJson));
-                    console.log("Sinkronisasi Berhasil!");
-                }
-            } catch (err) {
-                console.error("Gagal sinkronisasi:", err);
-            }
-        }
-
-        function renderData(data, isSearching = false) {
-            const wadahDaftar = document.getElementById('wadahDaftar');
-            
-            // Jika kotak pencarian kosong (isSearching false), tampilkan semua data yang ada
-            if (!isSearching && (!data || data.length === 0)) {
-                wadahDaftar.innerHTML = `<div class="text-center mt-12"><p class="text-gray-400">Memuat data...</p></div>`;
-                return;
-            }
-
-            // Jika sedang mencari tapi tidak ketemu
-            if (isSearching && data.length === 0) {
-                wadahDaftar.innerHTML = `<p class="text-center text-gray-400 mt-10 italic">Nama tidak ditemukan.</p>`;
-                return;
-            }
-
-            const dataTerurut = [...data].sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
-            const htmlKartu = dataTerurut.map(anggota => {
-                let sumberFoto = anggota.foto;
-                if (!sumberFoto || sumberFoto.length < 20) {
-                    sumberFoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(anggota.nama)}&background=00e5ff&color=fff`;
-                }
-                // Pastikan 'id' ada di Google Sheet Om, jika tidak ada gunakan 'nama' sebagai ID sementara
-                const idAnggota = anggota.id || encodeURIComponent(anggota.nama);
-                
-                return `
-                    <div class="member-card shadow-sm flex items-center p-4 bg-white mb-3 rounded-2xl border border-gray-100" 
-                        onclick="window.location.href='tambah-anggota.html?id=${idAnggota}'">
-                        <img src="${sumberFoto}" class="w-14 h-14 rounded-full object-cover border-2 border-[#00e5ff] mr-4">
-                        <div class="flex-1">
-                            <h4 class="font-bold text-gray-800 text-md leading-tight">${anggota.nama}</h4>
-                            <p class="text-xs text-gray-400 mt-1 italic">📍 ${anggota.domisili || 'Lokasi tidak diisi'}</p>
+                        <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200">
+                            <p class="text-gray-500 italic">Belum ada anggota keluarga yang terdaftar atau data sedang dimuat...</p>
+                            <button onclick="window.location.href='tambah-anggota.html'" class="text-[#00e5ff] font-bold mt-3 underline">
+                                + Tambah Anggota Pertama
+                            </button>
                         </div>
-                        <div class="text-gray-300 ml-2">❯</div>
                     </div>`;
-            }).join('');
-
-            wadahDaftar.innerHTML = htmlKartu; 
-        }
-
-        function filterAnggota() {
-            const inputElemen = document.getElementById('searchInput');
-            const statusElemen = document.getElementById('statusPencarian');
-            const input = inputElemen.value.toLowerCase().trim();
-            
-            // Jika kosong, langsung tampilkan semua tanpa delay
-            if (input.length === 0) {
-                if (statusElemen) statusElemen.classList.add('hidden');
-                renderData(getDaftarDariStorage(), false);
                 return;
             }
 
-            if (statusElemen) statusElemen.classList.remove('hidden');
-
-            clearTimeout(timeoutPencarian);
-            timeoutPencarian = setTimeout(() => {
-                const daftarKeluarga = getDaftarDariStorage();
-                const hasilFilter = daftarKeluarga.filter(anggota => {
-                    const nama = (anggota.nama || "").toLowerCase();
-                    const domisili = (anggota.domisili || "").toLowerCase();
-                    return nama.includes(input) || domisili.includes(input);
-                });
-
-                if (statusElemen) statusElemen.classList.add('hidden');
-                renderData(hasilFilter, true);
-            }, 300); 
+            renderData(daftarKeluarga);
         }
 
-        document.getElementById('searchInput').addEventListener('input', filterAnggota);
-        document.addEventListener('DOMContentLoaded', () => {
-            muatDaftarAnggota();
-        });
+        // 3. Fungsi Render: Mengubah data menjadi kartu visual
+        function renderData(data) {
+            const wadahDaftar = document.getElementById('wadahDaftar');
+            wadahDaftar.innerHTML = ''; 
+
+            // Urutkan berdasarkan nama A-Z agar rapi saat dicari
+            const dataTerurut = [...data].sort((a, b) => a.nama.localeCompare(b.nama));
+
+            dataTerurut.forEach(anggota => {
+                // Logika Foto Cadangan
+                let sumberFoto = anggota.foto;
+                if (!sumberFoto || sumberFoto === "null" || sumberFoto === "" || sumberFoto.includes('127.0.0.1')) {
+                    sumberFoto = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><rect width='24' height='24' fill='%2300e5ff'/><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>`;
+                }
+
+                let infoLahir = (anggota.tempatLahir || anggota.tanggalLahir) 
+                    ? `${anggota.tempatLahir || '?'}, ${anggota.tanggalLahir || '?'}`
+                    : "Data kelahiran belum diisi";
+
+                wadahDaftar.innerHTML += `
+                    <div class="member-card shadow-sm cursor-pointer hover:bg-gray-50 flex items-center p-4 bg-white mb-3 rounded-2xl border border-gray-100" 
+                        onclick="window.location.href='tambah-anggota.html?id=${anggota.id}'">
+                        
+                        <img src="${sumberFoto}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm mr-4" style="border-color: #00e5ff;">
+                        
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-800 text-lg leading-tight">${anggota.nama}</h4>
+                            <p class="text-[11px] text-[#00e5ff] font-semibold mt-0.5 uppercase tracking-wide">${infoLahir}</p>
+                            <p class="text-xs text-gray-400 mt-1 italic leading-tight">📍 ${anggota.domisili || 'Lokasi tidak diisi'}</p>
+                        </div>
+
+                        <div class="text-gray-300 ml-2">❯</div>
+                    </div>
+                `;
+            });
+        }
+
+        // 4. Fitur Cari: Filter otomatis saat mengetik
+        function filterAnggota() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const daftarKeluarga = getDaftarDariStorage();
+            
+            const hasilFilter = daftarKeluarga.filter(anggota => 
+                anggota.nama.toLowerCase().includes(input) || 
+                (anggota.domisili && anggota.domisili.toLowerCase().includes(input))
+            );
+
+            renderData(hasilFilter);
+        }
+
+        // Jalankan otomatis saat halaman dibuka
+        window.onload = muatDaftarAnggota;
     </script>
 </body>
 </html>
