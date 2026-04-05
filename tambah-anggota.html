@@ -252,24 +252,33 @@
 
         // 2. Fungsi Ambil Data & Isi Form (Mode Edit)
         function cekModeEdit() {
-            if (!idAnggotaUrl) return; // Jika tidak ada ID, anggap tambah baru
+            if (!idAnggotaUrl) return; 
 
             const dataRaw = localStorage.getItem('dataCloud');
             if (dataRaw) {
                 const resJson = JSON.parse(dataRaw);
                 const daftarKeluarga = resJson.keluarga || [];
-                const anggota = daftarKeluarga.find(a => a.id == idAnggotaUrl);
+                
+                // PERBAIKAN: Gunakan dua kali tanda sama dengan (==) agar angka 10 sama dengan teks "10"
+                // Dan kita pastikan id di-trim jika itu teks
+                const anggota = daftarKeluarga.find(a => String(a.id).trim() == String(idAnggotaUrl).trim());
 
                 if (anggota) {
-                    // Isi input form
-                    document.getElementById('namaLengkap').value = anggota.nama || "";
-                    document.getElementById('domisili').value = anggota.domisili || "";
+                    console.log("Data ditemukan:", anggota.nama);
                     
-                    // Ganti teks Header
+                    // Isi Nama
+                    const elNama = document.getElementById('namaLengkap');
+                    if(elNama) elNama.value = anggota.nama || "";
+
+                    // Isi Alamat/Domisili
+                    const elDomisili = document.getElementById('domisili');
+                    if(elDomisili) elDomisili.value = anggota.domisili || "";
+                    
+                    // Ganti Judul Header
                     const judulHalaman = document.querySelector('.header-curve h1');
                     if(judulHalaman) judulHalaman.innerText = "Edit Anggota";
-                    
-                    // Jika ada foto, tampilkan preview-nya
+
+                    // Tampilkan Foto jika ada
                     if (anggota.foto && anggota.foto.length > 20) {
                         const previewImage = document.getElementById('previewImage');
                         const defaultIcon = document.getElementById('defaultIcon');
@@ -277,7 +286,11 @@
                         previewImage.classList.remove('hidden');
                         defaultIcon.classList.add('hidden');
                     }
+                } else {
+                    console.error("ID tidak ditemukan di daftar keluarga:", idAnggotaUrl);
                 }
+            } else {
+                console.error("Gudang data (dataCloud) kosong di storage.");
             }
         }
 
