@@ -331,22 +331,30 @@
         let swiperInstance;
 
         // --- 2. INITIAL LOAD ---
-        window.addEventListener('DOMContentLoaded', () => { // Gunakan DOMContentLoaded agar lebih cepat
-            // 1. Cek identitas
-            cekIdentitas();
-            tampilkanSapaan(); 
+        document.addEventListener('DOMContentLoaded', async () => {
+            const dataLokal = localStorage.getItem('dataCloud');
+            const userNama = localStorage.getItem('userNama');
+            const inputNama = document.getElementById('inputNamaUser');
 
-            // 2. LANGSUNG TAMPILKAN DATA DARI HP (Anti 0)
-            if (localStorage.getItem('dataCloud')) {
-                perbaruiDashboardLokal(); 
+            if (dataLokal) {
+                // Jika data sudah ada di HP, langsung tampilkan dan buka input
+                perbaruiDashboardLokal();
+                if (inputNama) {
+                    inputNama.disabled = false;
+                    inputNama.placeholder = "Ketik nama Anda...";
+                }
+            } else {
+                // Jika benar-benar kosong, baru tarik dari cloud
+                await perbaruiDashboardCloud();
             }
 
-            // 3. Jalankan download cloud di latar belakang
-            if (localStorage.getItem('userNama')) {
-                perbaruiDashboardCloud().then(() => {
-                    // Setelah download selesai, refresh angka di layar sekali lagi
-                    perbaruiDashboardLokal();
-                });
+            // Tampilkan modal jika belum login
+            if (!userNama) {
+                const modal = document.getElementById('modalLogin');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                tampilkanSapaan();
             }
         });
 
@@ -570,40 +578,37 @@
 
         let sedangSinkron = false;
         async function perbaruiDashboardCloud() {
-            if (sedangSinkron) return; 
-            sedangSinkron = true;
+            const pesan = document.getElementById('pesanStatus');
+            const inputNama = document.getElementById('inputNamaUser'); // Ambil elemen input
             
-            const input = document.getElementById('inputNamaUser');
-            
+            if (pesan) pesan.innerText = "Sedang menyalin database ke HP...";
+
             try {
-                // Gunakan cache: 'no-cache' agar HP tidak mengambil data jadul
-                const response = await fetch(URL_API + "?t=" + Date.now(), {
-                    cache: 'no-cache'
-                });
-                
-                if (!response.ok) throw new Error('Network response was not ok');
-                
+                const response = await fetch(URL_API + "?action=read&t=" + Date.now());
                 const resJson = await response.json();
 
                 if (resJson && resJson.keluarga) {
+                    // 1. Kunci data ke Penyimpanan Lokal (DISK)
                     localStorage.setItem('dataCloud', JSON.stringify(resJson));
-                    
-                    if (input) {
-                        input.disabled = false;
-                        input.placeholder = "Contoh: Muntari";
-                        input.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
-                        input.classList.add('bg-gray-50', 'text-gray-700');
-                    }
-                    console.log("Data berhasil diperbarui dari Cloud");
-                    
-                    // PAKSA update dashboard setelah data masuk
+                    console.log("Database Berhasil Disalin ke Lokal!");
+
+                    // 2. Tampilkan ke dashboard
                     perbaruiDashboardLokal();
+
+                    // 3. BUKA GEMBOK INPUT (Enable)
+                    if (inputNama) {
+                        inputNama.disabled = false;
+                        inputNama.placeholder = "Ketik nama Anda...";
+                        inputNama.focus(); // Langsung arahkan kursor ke sana
+                    }
+
+                    if (pesan) pesan.innerText = "Database siap. Silakan masukkan nama.";
+                    return true;
                 }
             } catch (err) {
-                console.error("Gagal sinkronisasi di HP:", err);
-                if (input) input.placeholder = "Gagal memuat daftar nama...";
-            } finally {
-                sedangSinkron = false; 
+                console.error("Gagal menyalin data:", err);
+                if (pesan) pesan.innerText = "Gagal terhubung ke cloud. Cek internet.";
+                return false;
             }
         }
 
